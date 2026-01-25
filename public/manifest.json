@@ -1,0 +1,48 @@
+{
+  "name": "AwesomeMark",
+  "short_name": "AwesomeMark",
+  "description": "A gentle mood journal for daily reflection.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffdfa",
+  "theme_color": "#d4b5b0",
+  "icons": [
+    {
+      "src": "/undraw_hot-cocoa_64a7.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/undraw_hot-cocoa_64a7.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pwa-screenshot-wide.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/pwa-screenshot-mobile.svg",
+      "sizes": "750x1334",
+      "type": "image/svg+xml"
+    }
+  ]
+}
