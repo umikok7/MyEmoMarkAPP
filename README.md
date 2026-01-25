@@ -17,6 +17,17 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 后端入口函数在 `frontend/netlify/functions/api.js`，前端通过 `/api/*` 访问，已由 `netlify.toml` 自动转发。
 
+## Vercel 部署（推荐）
+
+本项目已新增 Next.js Route Handlers（`app/api/*`），Vercel 会自动将 `/api/*` 作为后端接口部署。
+
+请在 Vercel 项目设置中添加环境变量：
+
+- `DATABASE_URL`
+- `DATABASE_SSL`（可选，默认 true）
+
+**注意**：在 Vercel 上不要设置 `NEXT_PUBLIC_API_BASE_URL`，保持默认 `/api` 即可。
+
 ## 本地调试环境变量
 
 请复制 `frontend/.env.example` 为 `.env.local` 或 `.env`，并填写自己的 PostgreSQL 连接配置；Netlify Functions 也会读取这些变量。

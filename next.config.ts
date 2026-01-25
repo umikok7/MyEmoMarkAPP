@@ -2,12 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "/.netlify/functions/api/:path*",
-      },
-    ];
+    if (process.env.NETLIFY === "true") {
+      return [
+        {
+          source: "/api/:path*",
+          destination: "/.netlify/functions/api/:path*",
+        },
+      ]
+    }
+    return []
   },
 };
 

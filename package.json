@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-  "dev:api": "env-cmd -f .env netlify functions:serve --port 9999",
+    "dev:api": "env-cmd -f .env netlify functions:serve --port 9999",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -29,7 +29,9 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "env-cmd": "^11.0.0",
