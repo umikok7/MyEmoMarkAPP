@@ -12,7 +12,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const hideNav = HIDE_NAV_PATHS.some((path) => pathname === path)
 
   return (
-    <div className={hideNav ? "" : "pb-20"}>
+    <div className={hideNav ? "" : "pb-[calc(5rem+env(safe-area-inset-bottom))]"}>
       {children}
       {!hideNav && <BottomNav />}
       <Toaster />
