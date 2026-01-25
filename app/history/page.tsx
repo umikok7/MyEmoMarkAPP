@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CloudSun, Leaf, Wind, Droplets, Zap, Calendar, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { toast } from "sonner"
+import { buildApiUrl } from "@/lib/api"
 
 // Mock Data removed
 type MoodType = "happy" | "calm" | "anxious" | "sad" | "angry"
@@ -51,20 +53,22 @@ export default function HistoryPage() {
   const sentinelRef = React.useRef<HTMLDivElement | null>(null)
 
   // Fetch data
-  const mapItems = React.useCallback((items: ServerMoodItem[]): JournalEntry[] => {
-    return items.map((item: ServerMoodItem) => {
-      const dateObj = new Date(item.created_at)
-      return {
-        id: item.id,
-        date: item.created_at,
-        time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        mood: item.mood_type as MoodType,
-        intensity: item.intensity,
-  note: item.note ?? "",
-        tags: item.tags || [],
-      }
-    })
+  const mapItem = React.useCallback((item: ServerMoodItem): JournalEntry => {
+    const dateObj = new Date(item.created_at)
+    return {
+      id: item.id,
+      date: item.created_at,
+      time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      mood: item.mood_type as MoodType,
+      intensity: item.intensity,
+      note: item.note ?? "",
+      tags: item.tags || [],
+    }
   }, [])
+
+  const mapItems = React.useCallback((items: ServerMoodItem[]): JournalEntry[] => {
+    return items.map(mapItem)
+  }, [mapItem])
 
   React.useEffect(() => {
     const rawUser = localStorage.getItem("awesome-user")
@@ -83,18 +87,16 @@ export default function HistoryPage() {
   const fetchHistoryPage = React.useCallback(async (offsetValue: number, append = false) => {
     if (userId === null) return
     try {
-      const url = new URL('http://localhost/api/moods')
-      url.searchParams.set('limit', PAGE_LIMIT.toString())
-      url.searchParams.set('offset', offsetValue.toString())
-      if (userId) {
-        url.searchParams.set('user_id', userId)
-      }
-      const res = await fetch(url.toString(), { credentials: 'include' })
+      const res = await fetch(buildApiUrl("/moods", {
+        limit: PAGE_LIMIT,
+        offset: offsetValue,
+        user_id: userId || undefined,
+      }), { credentials: 'include' })
       if (!res.ok) {
         throw new Error('Failed to fetch history')
       }
-  const json = await res.json()
-  const items = (json?.data?.items || []) as ServerMoodItem[]
+      const json = await res.json()
+      const items = (json?.data?.items || []) as ServerMoodItem[]
       const mappedData = mapItems(items)
       if (items.length < PAGE_LIMIT) {
         setHasMore(false)
@@ -204,7 +206,19 @@ export default function HistoryPage() {
               {/* Entries */}
               <div className="space-y-4 pl-14">
                 {entries.map((entry) => (
-                   <TimelineCard key={entry.id} entry={entry} />
+                   <TimelineCard
+                     key={entry.id}
+                     entry={entry}
+                     onUpdated={(record) => {
+                       if (!record) return
+                       const updated = mapItem(record)
+                       setData((prev) => prev.map((item) => (item.id === entry.id ? updated : item)))
+                     }}
+                     onDeleted={(deletedId) => {
+                       if (!deletedId) return
+                       setData((prev) => prev.filter((item) => item.id !== deletedId))
+                     }}
+                   />
                 ))}
               </div>
             </div>
@@ -230,14 +244,48 @@ export default function HistoryPage() {
   )
 }
 
-function TimelineCard({ entry }: { entry: JournalEntry }) {
+function TimelineCard({
+  entry,
+  onUpdated,
+  onDeleted,
+}: {
+  entry: JournalEntry
+  onUpdated?: (record: ServerMoodItem) => void
+  onDeleted?: (deletedId: string) => void
+}) {
   const [isExpanded, setIsExpanded] = React.useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [editNote, setEditNote] = React.useState(entry.note)
+  const [editTags, setEditTags] = React.useState(entry.tags)
+  const [editIntensity, setEditIntensity] = React.useState(entry.intensity)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
   const config = MOOD_CONFIG[entry.mood]
   const Icon = config.icon
 
+  const handleStartEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    setEditNote(entry.note)
+    setEditTags(entry.tags)
+    setEditIntensity(entry.intensity)
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    setEditNote(entry.note)
+    setEditTags(entry.tags)
+    setEditIntensity(entry.intensity)
+    setIsEditing(false)
+  }
+
   return (
     <Card 
-      onClick={() => setIsExpanded(!isExpanded)}
+      onClick={() => {
+        if (isEditing) return
+        setIsExpanded(!isExpanded)
+      }}
       className={cn(
         "border-none shadow-sm transition-all duration-500 cursor-pointer overflow-hidden",
         isExpanded ? "bg-white shadow-md scale-[1.02] ring-1 ring-black/5" : "bg-white/60 hover:bg-white/80"
@@ -278,10 +326,14 @@ function TimelineCard({ entry }: { entry: JournalEntry }) {
 
       {/* Expanded Details */}
       <div className={cn(
-        "bg-white/50 border-t border-black/[0.03] transition-all duration-500 ease-in-out",
-        isExpanded ? "max-h-64 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+        "bg-white/50 border-t border-black/[0.03] transition-all duration-500 ease-in-out overflow-y-auto",
+        isExpanded ? (isEditing ? "max-h-96 opacity-100" : "max-h-64 opacity-100") : "max-h-0 opacity-0 overflow-hidden"
       )}>
         <div className="p-5 pt-4 space-y-4">
+          <div className={cn(
+            "transition-all duration-500",
+            isEditing ? "opacity-0 scale-[0.99] pointer-events-none h-0 overflow-hidden" : "opacity-100 scale-100"
+          )}>
            {/* Intensity Bar */}
            <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-2 px-1">
@@ -297,16 +349,238 @@ function TimelineCard({ entry }: { entry: JournalEntry }) {
            </div>
 
            {/* Tags */}
-           <div className="flex flex-wrap gap-2">
+           <div className="flex flex-wrap gap-2 pt-1">
              {entry.tags.map(tag => (
                <span key={tag} className="text-xs px-3 py-1.5 rounded-full bg-muted/50 text-muted-foreground/70">
                  #{tag}
                </span>
              ))}
            </div>
-           
+
+           <div className="pt-2">
+             <div className="h-px w-full bg-muted/60" />
+             <div className={cn(
+               "mt-3 flex items-center justify-between text-xs tracking-wide",
+               "transition-all duration-500",
+               isExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+             )}>
+               <button
+                 type="button"
+                 className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                 onClick={handleStartEdit}
+               >
+                 Edit entry
+               </button>
+               <button
+                 type="button"
+                 className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                 onClick={(event) => {
+                   event.stopPropagation()
+                   setIsDeleteOpen(true)
+                 }}
+               >
+                 Delete entry
+               </button>
+             </div>
+           </div>
+          </div>
+
+          <div className={cn(
+            "transition-all duration-500",
+            isEditing ? "opacity-100 scale-100" : "opacity-0 scale-[0.99] pointer-events-none h-0 overflow-hidden"
+          )}
+          onClick={(event) => event.stopPropagation()}
+          >
+            <div className="rounded-3xl bg-[#fcfbf9] ring-1 ring-black/5 p-4 space-y-4 shadow-[0_10px_30px_-25px_rgba(0,0,0,0.25)]">
+              <div>
+                <div className="flex justify-between text-xs text-muted-foreground mb-2 px-1">
+                  <span>Intensity</span>
+                  <span>{editIntensity}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={10}
+                  value={editIntensity}
+                  onChange={(event) => setEditIntensity(Number(event.target.value))}
+                  className="w-full h-1.5 rounded-full bg-muted/70 accent-primary/60"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground/70 px-1">Note</label>
+                <textarea
+                  value={editNote}
+                  onChange={(event) => setEditNote(event.target.value)}
+                  rows={3}
+                  className="mt-2 w-full rounded-2xl bg-white/70 border border-transparent ring-1 ring-black/5 px-4 py-3 text-sm text-foreground/80 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-black/10 transition"
+                  placeholder="Add a gentle note..."
+                />
+              </div>
+
+              <div className="pt-2">
+                <label className="text-xs text-muted-foreground/70 px-1">Tags</label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {editTags.map((tag, index) => (
+                    <button
+                      key={`${tag}-${index}`}
+                      type="button"
+                      className="text-[11px] px-3 py-1.5 rounded-full bg-muted/40 text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setEditTags((prev) => prev.filter((_, i) => i !== index))
+                      }}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="Add tag"
+                    className="text-[11px] px-3 py-1.5 rounded-full bg-white/70 ring-1 ring-black/5 text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-black/10"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        const value = event.currentTarget.value.trim()
+                        if (value) {
+                          setEditTags((prev) => [...prev, value])
+                          event.currentTarget.value = ""
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <div className="h-px w-full bg-muted/60" />
+                <div className="mt-3 flex items-center justify-end gap-4 text-xs tracking-wide">
+                  <button
+                    type="button"
+                    className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                    onClick={handleCancelEdit}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="text-foreground/70 hover:text-foreground/80 transition-opacity duration-300 active:scale-[0.98]"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setIsSaving(true)
+                      fetch(buildApiUrl(`/moods/${entry.id}`), {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({
+                          mood_type: entry.mood,
+                          intensity: editIntensity,
+                          note: editNote,
+                          tags: editTags,
+                        }),
+                      })
+                        .then((res) => {
+                          if (!res.ok) {
+                            throw new Error("Failed to update mood")
+                          }
+                          return res.json()
+                        })
+                        .then((payload) => {
+                          const record = payload?.data?.record as ServerMoodItem | undefined
+                          if (record) {
+                            onUpdated?.(record)
+                          }
+                          toast("Saved gently", {
+                            description: "Your memory has been refreshed.",
+                            duration: 2000,
+                          })
+                          setIsEditing(false)
+                        })
+                        .catch((error) => {
+                          console.error("Update mood failed", error)
+                          toast("Could not save", {
+                            description: "Please try again in a moment.",
+                            duration: 2200,
+                          })
+                        })
+                        .finally(() => {
+                          setIsSaving(false)
+                        })
+                    }}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {isDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md">
+          <div className="w-[92%] max-w-sm rounded-[28px] bg-[#fdfbf7] shadow-[0_25px_60px_-30px_rgba(0,0,0,0.35)] ring-1 ring-black/5 p-6 animate-[fadeScale_0.25s_ease-out]">
+            <div className="h-1 w-10 rounded-full bg-muted/60 mb-4" />
+            <h3 className="text-base font-light text-foreground/85 tracking-wide">Remove this memory?</h3>
+            <p className="text-xs text-muted-foreground/70 mt-3 leading-relaxed">
+              You can not undo this action. If this entry feels heavy, it’s okay to let it go.
+            </p>
+            <div className="mt-5 h-px w-full bg-muted/60" />
+            <div className="mt-4 flex items-center justify-end gap-4 text-xs">
+              <button
+                type="button"
+                className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setIsDeleteOpen(false)
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="text-[#a67c5b]/80 hover:text-[#8f6647] transition-opacity duration-300 active:scale-[0.98]"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setIsDeleting(true)
+                  fetch(buildApiUrl(`/moods/${entry.id}`), {
+                    method: "DELETE",
+                    credentials: "include",
+                  })
+                    .then((res) => {
+                      if (!res.ok) {
+                        throw new Error("Failed to delete mood")
+                      }
+                      return res.json()
+                    })
+                    .then(() => {
+                      onDeleted?.(entry.id)
+                      toast("Removed softly", {
+                        description: "That memory has been let go.",
+                        duration: 2000,
+                      })
+                      setIsDeleteOpen(false)
+                    })
+                    .catch((error) => {
+                      console.error("Delete mood failed", error)
+                      toast("Could not remove", {
+                        description: "Please try again in a moment.",
+                        duration: 2200,
+                      })
+                    })
+                    .finally(() => {
+                      setIsDeleting(false)
+                    })
+                }}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Removing..." : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }

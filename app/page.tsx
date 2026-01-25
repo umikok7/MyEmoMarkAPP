@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { CloudSun, Leaf, Wind, Droplets, Zap, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { buildApiUrl } from "@/lib/api"
 
 const MOODS = [
   { id: "happy", label: "Joy", color: "bg-[#fff0f0]", icon: CloudSun },
@@ -22,7 +23,7 @@ export default function Home() {
   const [intensity, setIntensity] = React.useState([50])
   const [note, setNote] = React.useState("")
   const [mounted, setMounted] = React.useState(false)
-  const [isSaving, setIsSaving] = React.useState(false)
+	const [isSaving, setIsSaving] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
@@ -30,7 +31,7 @@ export default function Home() {
 
 	const handleLogout = async () => {
 		try {
-			await fetch("http://localhost/api/auth/logout", {
+			await fetch(buildApiUrl("/auth/logout"), {
 				method: "POST",
 				credentials: "include",
 			})
@@ -66,7 +67,7 @@ export default function Home() {
 		}
 
     try {
-		const response = await fetch("http://localhost/api/moods", {
+		const response = await fetch(buildApiUrl("/moods"), {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

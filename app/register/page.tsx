@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowRight, Sparkles, Flower } from "lucide-react"
+import { buildApiUrl } from "@/lib/api"
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = React.useState(false)
@@ -18,7 +19,7 @@ export default function RegisterPage() {
       const username = (document.getElementById("username") as HTMLInputElement).value
       const password = (document.getElementById("password") as HTMLInputElement).value
 
-      const res = await fetch("http://localhost/api/auth/register", {
+  const res = await fetch(buildApiUrl("/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

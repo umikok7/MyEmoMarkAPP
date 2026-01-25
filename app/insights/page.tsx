@@ -6,6 +6,7 @@ import { ArrowLeft, Lightbulb, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import ReactECharts from 'echarts-for-react';
 import { Button } from "@/components/ui/button"
+import { buildApiUrl } from "@/lib/api"
 
 export default function InsightsPage() {
   const [loading, setLoading] = React.useState(true)
@@ -17,7 +18,9 @@ export default function InsightsPage() {
   React.useEffect(() => {
     const fetchInsights = async () => {
       try {
-        const res = await fetch('http://localhost/api/moods/analytics')
+  const res = await fetch(buildApiUrl("/moods/analytics"), {
+          credentials: "include",
+        })
         if (!res.ok) throw new Error("Failed to fetch")
         const json = await res.json()
         /* 

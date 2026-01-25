@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowRight, Sparkles, Flower } from "lucide-react"
 import { toast } from "sonner"
+import { buildApiUrl } from "@/lib/api"
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false)
@@ -23,7 +24,7 @@ export default function LoginPage() {
         const email = (document.getElementById('email') as HTMLInputElement).value
         const password = (document.getElementById('password') as HTMLInputElement).value
 
-        const res = await fetch('http://localhost/api/auth/login', {
+  const res = await fetch(buildApiUrl("/auth/login"), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
