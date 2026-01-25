@@ -28,7 +28,7 @@ export function BottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#fffdfa]/95 backdrop-blur-md border-t border-black/[0.03]">
-      <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-around pb-[env(safe-area-inset-bottom)]">
+      <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-around safe-area-bottom">
         {tabs.map((tab) => {
           const isActive = pathname === tab.href
           const Icon = tab.icon

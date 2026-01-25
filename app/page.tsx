@@ -146,7 +146,7 @@ export default function Home() {
 				)}
 			>
 				{/* Top Greeting */}
-				<header className="pt-8 pb-10 space-y-4">
+				<header className="pt-8 pb-10 space-y-4 safe-area-header">
 					<div className="flex items-center justify-between px-1">
 						<div className="text-xs font-semibold tracking-widest text-primary-foreground/50 uppercase">
 							{new Date().toLocaleDateString("en-US", { weekday: "long" })}

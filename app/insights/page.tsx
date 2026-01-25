@@ -152,7 +152,7 @@ export default function InsightsPage() {
       <main className="w-full max-w-md">
         
         {/* Header */}
-        <header className="flex items-center gap-4 mb-10 pt-4">
+  <header className="flex items-center gap-4 mb-10 pt-4 safe-area-header">
           <Link href="/">
              <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/5 -ml-2">
                <ArrowLeft className="w-5 h-5 text-muted-foreground" />

@@ -64,8 +64,8 @@ export default function LoginPage() {
 
       <main className="w-full max-w-sm flex flex-col items-center z-10 space-y-8 animate-fade-in-up">
         
-        {/* Header / Illustration Area */}
-        <div className="flex flex-col items-center text-center space-y-6">
+  {/* Header / Illustration Area */}
+  <div className="flex flex-col items-center text-center space-y-6 safe-area-header">
           <div className="w-24 h-24 rounded-full bg-white shadow-sm ring-1 ring-white/60 flex items-center justify-center mb-2 relative group">
             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-secondary/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
             <Flower className="w-10 h-10 text-muted-foreground/40 group-hover:text-primary/60 transition-colors duration-700" strokeWidth={1} />
