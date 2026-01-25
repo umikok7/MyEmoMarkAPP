@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Save, CloudSun, Leaf, Wind, Droplets, Zap, Sparkles } from "lucide-react"
+import { CloudSun, Leaf, Wind, Droplets, Zap, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -46,8 +46,19 @@ export default function Home() {
     if (!selectedMood) return
     
     setIsSaving(true)
+		const rawUser = localStorage.getItem("awesome-user")
+		let userId: string | undefined
+		if (rawUser) {
+			try {
+				const parsed = JSON.parse(rawUser)
+				userId = parsed?.id
+			} catch (error) {
+				console.error("Failed to parse stored user", error)
+			}
+		}
     
 		const payload = {
+			user_id: userId,
 			mood_type: selectedMood,
 			intensity: Math.round(intensity[0] / 10), // Convert 0-100 to 1-10
 			note: note,
@@ -281,10 +292,11 @@ export default function Home() {
 						size="xl"
 						variant="floating" // Ensure button.tsx has this or use default with classes
 						className="rounded-full h-16 pl-8 pr-10 shadow-xl shadow-secondary/20 bg-foreground text-background hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-500 flex gap-4 items-center"
+						disabled={isSaving}
 					>
 						<div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
 						<span className="text-sm font-medium tracking-widest uppercase">
-							Save Entry
+							{isSaving ? "Saving..." : "Save Entry"}
 						</span>
 					</Button>
 				</div>

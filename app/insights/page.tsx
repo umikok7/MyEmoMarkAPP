@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 
 export default function InsightsPage() {
   const [loading, setLoading] = React.useState(true)
-  const [pieData, setPieData] = React.useState<any[]>([])
+  const [pieData, setPieData] = React.useState<Array<{ name: string; value: number; color: string }>>([])
   const [trendData, setTrendData] = React.useState<{dates: string[], values: number[]}>({ dates: [], values: [] })
   const [insightText, setInsightText] = React.useState("")
   const [overviewHtml, setOverviewHtml] = React.useState("")

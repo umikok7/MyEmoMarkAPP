@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 // Badge import removed
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, CloudSun, Leaf, Wind, Droplets, Zap, Sparkles, Calendar, ArrowLeft } from "lucide-react"
+import { CloudSun, Leaf, Wind, Droplets, Zap, Calendar, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 // Mock Data removed
@@ -21,6 +21,15 @@ interface JournalEntry {
   tags: string[]
 }
 
+type ServerMoodItem = {
+  id: string
+  mood_type: MoodType
+  intensity: number
+  note?: string
+  tags?: string[]
+  created_at: string
+}
+
 // Mood Config Map
 const MOOD_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType; bg: string }> = {
   happy: { label: "Joy", color: "text-rose-400", bg: "bg-rose-50", icon: CloudSun },
@@ -30,43 +39,112 @@ const MOOD_CONFIG: Record<string, { label: string; color: string; icon: React.El
   angry: { label: "Heat", color: "text-red-400", bg: "bg-red-50", icon: Zap },
 }
 
+const PAGE_LIMIT = 10
+
 export default function HistoryPage() {
   const [loading, setLoading] = React.useState(true)
   const [data, setData] = React.useState<JournalEntry[]>([])
+  const [userId, setUserId] = React.useState<string | null>(null)
+  const [offset, setOffset] = React.useState(0)
+  const [hasMore, setHasMore] = React.useState(true)
+  const [isFetchingMore, setIsFetchingMore] = React.useState(false)
+  const sentinelRef = React.useRef<HTMLDivElement | null>(null)
 
   // Fetch data
+  const mapItems = React.useCallback((items: ServerMoodItem[]): JournalEntry[] => {
+    return items.map((item: ServerMoodItem) => {
+      const dateObj = new Date(item.created_at)
+      return {
+        id: item.id,
+        date: item.created_at,
+        time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        mood: item.mood_type as MoodType,
+        intensity: item.intensity,
+  note: item.note ?? "",
+        tags: item.tags || [],
+      }
+    })
+  }, [])
+
   React.useEffect(() => {
-    const fetchHistory = async () => {
+    const rawUser = localStorage.getItem("awesome-user")
+    if (rawUser) {
       try {
-        const res = await fetch('http://localhost/api/moods')
-        if (!res.ok) throw new Error("Failed to fetch")
-        const json = await res.json()
-        
-        // Transform backend definition to frontend props
-        // Backend: { id, mood_type, intensity, note, tags, created_at }
-        // Frontend: { id, date, time, mood, intensity, note, tags }
-        const items = json?.data?.items || []
-        const mappedData = items.map((item: any) => {
-          const dateObj = new Date(item.created_at)
-          return {
-            id: item.id,
-            date: item.created_at,
-            time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            mood: item.mood_type as MoodType,
-            intensity: item.intensity,
-            note: item.note,
-            tags: item.tags || []
-          }
-        })
-        setData(mappedData)
-      } catch (err) {
-        console.error(err)
-      } finally {
+        const parsed = JSON.parse(rawUser)
+        setUserId(parsed?.id || "guest")
+        return
+      } catch (error) {
+        console.error("Failed to parse stored user", error)
+      }
+    }
+    setUserId("guest")
+  }, [])
+
+  const fetchHistoryPage = React.useCallback(async (offsetValue: number, append = false) => {
+    if (userId === null) return
+    try {
+      const url = new URL('http://localhost/api/moods')
+      url.searchParams.set('limit', PAGE_LIMIT.toString())
+      url.searchParams.set('offset', offsetValue.toString())
+      if (userId) {
+        url.searchParams.set('user_id', userId)
+      }
+      const res = await fetch(url.toString(), { credentials: 'include' })
+      if (!res.ok) {
+        throw new Error('Failed to fetch history')
+      }
+  const json = await res.json()
+  const items = (json?.data?.items || []) as ServerMoodItem[]
+      const mappedData = mapItems(items)
+      if (items.length < PAGE_LIMIT) {
+        setHasMore(false)
+      } else {
+        setHasMore(true)
+      }
+      setData((prev) => (append ? [...prev, ...mappedData] : mappedData))
+      setOffset(offsetValue + mappedData.length)
+    } catch (err) {
+      console.error("History fetch error:", err)
+      if (!append) {
+        setHasMore(false)
+        setData([])
+      }
+    } finally {
+      if (!append) {
         setLoading(false)
       }
     }
-    fetchHistory()
-  }, [])
+  }, [mapItems, userId])
+
+  React.useEffect(() => {
+    if (userId === null) return
+    setData([])
+    setOffset(0)
+    setHasMore(true)
+    setLoading(true)
+    fetchHistoryPage(0)
+  }, [fetchHistoryPage, userId])
+
+  const loadMore = React.useCallback(async () => {
+    if (!hasMore || isFetchingMore || loading) return
+    setIsFetchingMore(true)
+    await fetchHistoryPage(offset, true)
+    setIsFetchingMore(false)
+  }, [fetchHistoryPage, hasMore, isFetchingMore, loading, offset])
+
+  React.useEffect(() => {
+    if (!sentinelRef.current) return
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0]
+      if (entry?.isIntersecting) {
+        loadMore()
+      }
+    }, { rootMargin: '200px' })
+    observer.observe(sentinelRef.current)
+    return () => {
+      observer.disconnect()
+    }
+  }, [loadMore])
 
 
   // Group entries by date
@@ -110,7 +188,7 @@ export default function HistoryPage() {
           {/* Vertical Line Decoration */}
           <div className="absolute left-[19px] top-2 bottom-0 w-[1px] bg-gradient-to-b from-muted-foreground/20 via-muted-foreground/10 to-transparent z-0" />
 
-          {Object.entries(groupedEntries).map(([dateLabel, entries], index) => (
+          {Object.entries(groupedEntries).map(([dateLabel, entries]) => (
             <div key={dateLabel} className="relative z-10 group">
               
               {/* Date Header */}
@@ -131,6 +209,13 @@ export default function HistoryPage() {
               </div>
             </div>
           ))}
+
+       <div ref={sentinelRef} className="h-1" />
+       {isFetchingMore && (
+         <div className="text-xs text-muted-foreground/60 tracking-wide flex justify-center pt-4">
+          Loading more entries...
+         </div>
+       )}
 
           {/* End of Reflection */}
           <div className="flex items-center gap-4 pt-4 opacity-50">
