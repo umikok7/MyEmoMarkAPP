@@ -1,11 +1,5 @@
 <svg width="750" height="1334" viewBox="0 0 750 1334" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fffdfa" />
-      <stop offset="100%" stop-color="#f2e8e4" />
-    </linearGradient>
-  </defs>
-  <rect width="750" height="1334" fill="url(#bg)" />
+  <rect width="750" height="1334" fill="#fffdfa" />
   <rect x="70" y="140" width="610" height="1054" rx="60" fill="#ffffff" stroke="#e6dcd7" stroke-width="2" />
   <text x="120" y="240" font-family="'Helvetica Neue', Arial, sans-serif" font-size="38" fill="#8f6f68">AwesomeMark</text>
   <text x="120" y="300" font-family="'Helvetica Neue', Arial, sans-serif" font-size="22" fill="#b69c96">Log your mood</text>

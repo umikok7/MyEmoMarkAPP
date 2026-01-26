@@ -288,7 +288,7 @@ function TimelineCard({
       }}
       className={cn(
         "border-none shadow-sm transition-all duration-500 cursor-pointer overflow-hidden",
-        isExpanded ? "bg-white shadow-md scale-[1.02] ring-1 ring-black/5" : "bg-white/60 hover:bg-white/80"
+        isExpanded ? "bg-white shadow-md ring-1 ring-black/5" : "bg-white/60 hover:bg-white/80"
       )}
     >
       <div className="p-5 flex gap-4 items-start">
