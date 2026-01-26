@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -9,6 +10,7 @@ import { CloudSun, Leaf, Wind, Droplets, Zap, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { buildApiUrl } from "@/lib/api"
+import { OnboardingGuide } from "@/components/onboarding-guide"
 
 const MOODS = [
   { id: "happy", label: "Joy", color: "bg-[#fff0f0]", icon: CloudSun },
@@ -23,11 +25,15 @@ export default function Home() {
   const [intensity, setIntensity] = React.useState([50])
   const [note, setNote] = React.useState("")
   const [mounted, setMounted] = React.useState(false)
-	const [isSaving, setIsSaving] = React.useState(false)
+		const [isSaving, setIsSaving] = React.useState(false)
+		const [isLoggedIn, setIsLoggedIn] = React.useState(false)
+		const loginButtonRef = React.useRef<HTMLAnchorElement | null>(null)
 
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+	React.useEffect(() => {
+		setMounted(true)
+		const rawUser = localStorage.getItem("awesome-user")
+		setIsLoggedIn(Boolean(rawUser))
+	}, [])
 
 	const handleLogout = async () => {
 		try {
@@ -39,6 +45,7 @@ export default function Home() {
 			console.error("Logout failed", error)
 		} finally {
 			localStorage.removeItem("awesome-user")
+			setIsLoggedIn(false)
 			window.location.href = "/login"
 		}
 	}
@@ -151,13 +158,24 @@ export default function Home() {
 						<div className="text-xs font-semibold tracking-widest text-primary-foreground/50 uppercase">
 							{new Date().toLocaleDateString("en-US", { weekday: "long" })}
 						</div>
-						<button
-							className="text-xs font-semibold tracking-widest text-primary-foreground/50 uppercase hover:text-foreground/70 transition"
-							onClick={handleLogout}
-							title="Log out"
-						>
-							Login Out
-						</button>
+						{isLoggedIn ? (
+							<button
+								className="text-xs font-semibold tracking-widest text-primary-foreground/50 uppercase hover:text-foreground/70 transition"
+								onClick={handleLogout}
+								title="Log out"
+							>
+								Log out
+							</button>
+						) : (
+							<Link
+								ref={loginButtonRef}
+								id="login-register-button"
+								href="/login"
+								className="text-xs font-semibold tracking-widest text-primary-foreground/50 uppercase hover:text-foreground/70 transition"
+							>
+								Login / Register
+							</Link>
+						)}
 					</div>
 					<h1 className="text-4xl font-light text-foreground tracking-tight">
 						Have a nice day
@@ -302,6 +320,7 @@ export default function Home() {
 					</Button>
 				</div>
 			</main>
+			<OnboardingGuide targetRef={loginButtonRef} isLoggedIn={isLoggedIn} />
 		</div>
 	)
 }
