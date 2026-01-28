@@ -9,16 +9,18 @@ import {
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams
-  const days = Math.max(1, Number(query.get("days")) || 7)
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(query.get("user_id"), sessionUserId)
 
+  // Get year and month from query params, or use current date
   const now = new Date()
-  const start = new Date(now)
-  start.setDate(now.getDate() - (days - 1))
+  const year = Number(query.get("year")) || now.getFullYear()
+  const month = Number(query.get("month")) || (now.getMonth() + 1) // 1-12
+  
+  // Calculate date range for the specified month
+  const start = new Date(year, month - 1, 1) // First day of month
   start.setHours(0, 0, 0, 0)
-  const end = new Date(now)
-  end.setDate(now.getDate() + 1)
+  const end = new Date(year, month, 1) // First day of next month
   end.setHours(0, 0, 0, 0)
 
   const { rows } = await pool.query(
@@ -30,6 +32,6 @@ export async function GET(request: NextRequest) {
     [userId, start, end]
   )
 
-  const analytics = buildAnalytics(rows, days)
+  const analytics = buildAnalytics(rows, year, month)
   return ok(analytics)
 }

@@ -10,15 +10,18 @@ const STORAGE_KEY = "awesome-onboarding-complete"
 type Spotlight = {
   top: number
   left: number
-  size: number
+  width: number
+  height: number
+  borderRadius: string
 }
 
 type OnboardingGuideProps = {
   targetRef: React.RefObject<HTMLElement | null>
+  tasksRef: React.RefObject<HTMLElement | null>
   isLoggedIn: boolean
 }
 
-export function OnboardingGuide({ targetRef, isLoggedIn }: OnboardingGuideProps) {
+export function OnboardingGuide({ targetRef, tasksRef, isLoggedIn }: OnboardingGuideProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [step, setStep] = React.useState(1)
   const [spotlight, setSpotlight] = React.useState<Spotlight | null>(null)
@@ -40,18 +43,35 @@ export function OnboardingGuide({ targetRef, isLoggedIn }: OnboardingGuideProps)
   }, [])
 
   const updateSpotlight = React.useCallback(() => {
-    if (!targetRef.current) return
-    const rect = targetRef.current.getBoundingClientRect()
-    const size = Math.max(rect.width, rect.height) + 28
+    let activeRef: HTMLElement | null = null
+    let padding = 0
+    let radius = "50%"
+
+    if (step === 2) {
+      activeRef = tasksRef.current
+      padding = 20
+      radius = "2rem" // 32px matches rounded-3xl approx
+    } else if (step === 3) {
+      activeRef = targetRef.current
+      padding = 14
+      radius = "50%"
+    }
+
+    if (!activeRef) return
+
+    const rect = activeRef.getBoundingClientRect()
+    
     setSpotlight({
-      top: rect.top + rect.height / 2 - size / 2,
-      left: rect.left + rect.width / 2 - size / 2,
-      size,
+      top: rect.top - padding,
+      left: rect.left - padding,
+      width: rect.width + padding * 2,
+      height: rect.height + padding * 2,
+      borderRadius: radius,
     })
-  }, [targetRef])
+  }, [step, targetRef, tasksRef])
 
   React.useLayoutEffect(() => {
-    if (!isOpen || step !== 2) return
+    if (!isOpen || step === 1) return
     updateSpotlight()
     window.addEventListener("resize", updateSpotlight)
     window.addEventListener("scroll", updateSpotlight, true)
@@ -74,25 +94,26 @@ export function OnboardingGuide({ targetRef, isLoggedIn }: OnboardingGuideProps)
         aria-hidden
       />
 
-      {step === 2 && spotlight ? (
+      {step !== 1 && spotlight ? (
         <div
-          className="absolute rounded-full ring-1 ring-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] transition-all duration-500"
+          className="absolute ring-1 ring-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] transition-all duration-500"
           style={{
             top: spotlight.top,
             left: spotlight.left,
-            width: spotlight.size,
-            height: spotlight.size,
+            width: spotlight.width,
+            height: spotlight.height,
+            borderRadius: spotlight.borderRadius,
           }}
           aria-hidden
         />
       ) : null}
 
-      {step === 2 && spotlight ? (
+      {step === 3 && spotlight ? (
         <div
           className="absolute flex items-center gap-2 text-xs text-white/90"
           style={{
             top: Math.max(spotlight.top - 28, 16),
-            left: spotlight.left + spotlight.size - 10,
+            left: spotlight.left + spotlight.width - 10,
           }}
         >
           <ArrowUpRight className="h-4 w-4 text-white/80" strokeWidth={1.2} />
@@ -115,7 +136,7 @@ export function OnboardingGuide({ targetRef, isLoggedIn }: OnboardingGuideProps)
             <X className="h-4 w-4" strokeWidth={1.3} />
           </button>
 
-          {step === 1 ? (
+          {step === 1 && (
             <div className="space-y-5">
               <p className="text-[11px] font-semibold tracking-[0.3em] text-muted-foreground/60 uppercase">
                 Welcome
@@ -133,10 +154,32 @@ export function OnboardingGuide({ targetRef, isLoggedIn }: OnboardingGuideProps)
                 Continue
               </Button>
             </div>
-          ) : (
+          )}
+
+          {step === 2 && (
             <div className="space-y-4">
               <p className="text-[11px] font-semibold tracking-[0.3em] text-muted-foreground/60 uppercase">
-                Next step
+                New Feature
+              </p>
+              <h2 className="text-2xl font-light text-foreground">
+                Daily Todo List
+              </h2>
+              <p className="text-sm text-muted-foreground/70 leading-relaxed">
+                Stay organized with our new minimalist task manager. Plan your day with calm and clarity.
+              </p>
+              <Button
+                className="w-full rounded-full bg-[#1f1f1f]/90 text-white hover:bg-[#1f1f1f]"
+                onClick={() => setStep(3)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4">
+              <p className="text-[11px] font-semibold tracking-[0.3em] text-muted-foreground/60 uppercase">
+                Final Step
               </p>
               <h2 className="text-2xl font-light text-foreground">
                 Tap the top-right button to log in or create your journal.

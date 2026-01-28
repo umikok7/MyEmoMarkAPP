@@ -34,5 +34,20 @@ CREATE TABLE IF NOT EXISTS mood_records (
 CREATE INDEX IF NOT EXISTS idx_mood_records_user_created
   ON mood_records (user_id, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS daily_tasks (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  task_date date NOT NULL,
+  is_done boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz,
+  is_deleted boolean NOT NULL DEFAULT false
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_tasks_user_date
+  ON daily_tasks (user_id, task_date DESC);
+
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user
   ON user_sessions (user_id);
