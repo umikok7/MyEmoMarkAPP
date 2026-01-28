@@ -85,20 +85,13 @@ export const listMoods = async ({
   }))
 }
 
-export const buildAnalytics = (records: Array<{ mood_type: string; intensity: number; created_at: string }>, days: number) => {
+export const buildAnalytics = (
+  records: Array<{ mood_type: string; intensity: number; created_at: string }>, 
+  year: number, 
+  month: number
+) => {
   const pieMap: Record<string, number> = {}
-  const daySum: Record<string, number> = {}
-  const dayCount: Record<string, number> = {}
-
-  const formatDay = (date: Date) =>
-    new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date)
-
-  records.forEach((record) => {
-    pieMap[record.mood_type] = (pieMap[record.mood_type] || 0) + 1
-    const dayKey = formatDay(new Date(record.created_at))
-    daySum[dayKey] = (daySum[dayKey] || 0) + record.intensity
-    dayCount[dayKey] = (dayCount[dayKey] || 0) + 1
-  })
+  const dayMap: Record<string, { mood: string; intensity: number }> = {}
 
   const colorMap: Record<string, string> = {
     happy: "#d4b5b0",
@@ -115,33 +108,73 @@ export const buildAnalytics = (records: Array<{ mood_type: string; intensity: nu
     angry: "Heat",
   }
 
-  const pie = Object.entries(pieMap)
+  // Process records for pie chart and calendar
+  records.forEach((record) => {
+    pieMap[record.mood_type] = (pieMap[record.mood_type] || 0) + 1
+    
+    // For calendar: use date string as key (YYYY-MM-DD)
+    const date = new Date(record.created_at)
+    const dateKey = date.toISOString().split('T')[0]
+    
+    // Store the most recent mood for each day
+    if (!dayMap[dateKey] || new Date(record.created_at) > new Date(dayMap[dateKey].intensity)) {
+      dayMap[dateKey] = {
+        mood: record.mood_type,
+        intensity: record.intensity
+      }
+    }
+  })
+
+  // Build donut chart data (simplified pie chart)
+  const donut = Object.entries(pieMap)
     .map(([mood, count]) => ({
       name: nameMap[mood] || mood,
       value: count,
       color: colorMap[mood] || "#e5e7eb",
     }))
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .sort((a, b) => b.value - a.value) // Sort by value, descending
 
-  const now = new Date()
-  const start = new Date(now)
-  start.setDate(now.getDate() - (days - 1))
-  start.setHours(0, 0, 0, 0)
-
-  const dates: string[] = []
-  const values: number[] = []
-  for (let i = 0; i < days; i += 1) {
-    const current = new Date(start)
-    current.setDate(start.getDate() + i)
-    const key = formatDay(current)
-    const avg = dayCount[key] ? Math.floor(daySum[key] / dayCount[key]) : 0
-    dates.push(key)
-    values.push(avg)
+  // Build monthly calendar grid for the specified month
+  const currentYear = year
+  const currentMonth = month - 1 // JavaScript months are 0-indexed
+  
+  // Get first day of month and total days
+  const firstDay = new Date(currentYear, currentMonth, 1)
+  const lastDay = new Date(currentYear, currentMonth + 1, 0)
+  const totalDays = lastDay.getDate()
+  const startDayOfWeek = firstDay.getDay() // 0 = Sunday
+  
+  // Build calendar array
+  const calendar: Array<{
+    date: number | null;
+    dateString: string | null;
+    mood: string | null;
+    color: string | null;
+    intensity: number | null;
+  }> = []
+  
+  // Add empty cells for days before month starts
+  for (let i = 0; i < startDayOfWeek; i++) {
+    calendar.push({ date: null, dateString: null, mood: null, color: null, intensity: null })
+  }
+  
+  // Add days of month
+  for (let day = 1; day <= totalDays; day++) {
+    const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const dayData = dayMap[dateString]
+    
+    calendar.push({
+      date: day,
+      dateString,
+      mood: dayData?.mood || null,
+      color: dayData ? colorMap[dayData.mood] || null : null,
+      intensity: dayData?.intensity || null,
+    })
   }
 
-  let overviewHtml = ""
-  let insightText = ""
-  if (records.length) {
+  // Generate suggestion text
+  let suggestionText = "Take time to breathe. Your feelings are valid."
+  if (records.length > 0) {
     let topMood = ""
     let topCount = 0
     Object.entries(pieMap).forEach(([mood, count]) => {
@@ -150,27 +183,26 @@ export const buildAnalytics = (records: Array<{ mood_type: string; intensity: nu
         topCount = count
       }
     })
-    const label = nameMap[topMood] || "Balanced"
-    overviewHtml = `Your recent days lean toward <span class=\"font-normal\">${label}</span>. Take a quiet moment to notice your rhythm.`
-
-    let maxAvg = 0
-    let maxDay = ""
-    values.forEach((value, index) => {
-      if (value > maxAvg) {
-        maxAvg = value
-        maxDay = dates[index]
-      }
-    })
-    if (maxDay) {
-      insightText = `Intensity peaks around ${maxDay}. Consider a short breathing pause on that day.`
+    
+    const suggestions: Record<string, string> = {
+      happy: "Your joy is beautiful. Share it with someone today.",
+      calm: "You've found peace. Notice the quiet moments.",
+      anxious: "Breathe slowly. This feeling will pass.",
+      sad: "Be gentle with yourself. Rest is healing.",
+      angry: "Your feelings matter. Take a mindful pause.",
     }
+    
+    suggestionText = suggestions[topMood] || suggestionText
   }
 
+  // Create date for the specified month to format label
+  const monthDate = new Date(currentYear, currentMonth, 1)
+
   return {
-    pie_chart: pie,
-    line_chart: { dates, values },
-    insight_text: insightText,
-    overview_html: overviewHtml,
+    calendar,
+    donut_chart: donut,
+    suggestion: suggestionText,
+    month: new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(monthDate),
   }
 }
 
