@@ -2,38 +2,186 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Slider } from "@/components/ui/slider"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { CloudSun, Leaf, Wind, Droplets, Zap, Sparkles } from "lucide-react"
+import Image from "next/image"
+import { CloudSun, Leaf, Wind, Droplets, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { buildApiUrl } from "@/lib/api"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 import { OnboardingGuide } from "@/components/onboarding-guide"
 
-const MOODS = [
-  { id: "happy", label: "Joy", color: "bg-[#fff0f0]", icon: CloudSun },
-  { id: "calm", label: "Calm", color: "bg-[#f0f9f9]", icon: Leaf },
-  { id: "anxious", label: "Worry", color: "bg-[#fffaf0]", icon: Wind },
-  { id: "sad", label: "Blue", color: "bg-[#f4faff]", icon: Droplets },
-  { id: "angry", label: "Heat", color: "bg-[#fff5f5]", icon: Zap },
+type MoodType = "happy" | "calm" | "anxious" | "sad" | "angry"
+
+type TaskItem = {
+	id: string
+	title: string
+	done: boolean
+}
+
+type ServerTaskItem = {
+	id: string
+	title: string
+	is_done: boolean
+	created_at: string
+}
+
+const MOODS: Array<{
+	id: MoodType
+	label: string
+	icon: typeof CloudSun
+	dot: string
+	gradient: string
+}> = [
+	{
+		id: "happy",
+		label: "Joy",
+		icon: CloudSun,
+		dot: "bg-rose-300",
+		gradient: "from-[#fdecec]",
+	},
+	{
+		id: "calm",
+		label: "Calm",
+		icon: Leaf,
+		dot: "bg-teal-300",
+		gradient: "from-[#ecf7f3]",
+	},
+	{
+		id: "anxious",
+		label: "Worry",
+		icon: Wind,
+		dot: "bg-amber-300",
+		gradient: "from-[#fff6e8]",
+	},
+	{
+		id: "sad",
+		label: "Blue",
+		icon: Droplets,
+		dot: "bg-sky-300",
+		gradient: "from-[#ecf5ff]",
+	},
+	{
+		id: "angry",
+		label: "Heat",
+		icon: Zap,
+		dot: "bg-red-300",
+		gradient: "from-[#fff0f0]",
+	},
 ]
 
+const DATE_RANGE_DAYS = 21
+
+const toDateKey = (date: Date) => date.toLocaleDateString("en-CA")
+
+const startOfWeek = (date: Date) => {
+	const target = new Date(date)
+	const day = target.getDay()
+	const diff = (day + 6) % 7
+	target.setDate(target.getDate() - diff)
+	target.setHours(0, 0, 0, 0)
+	return target
+}
+
+const addDays = (date: Date, amount: number) => {
+	const next = new Date(date)
+	next.setDate(next.getDate() + amount)
+	return next
+}
+
+const formatDateLabel = (date: Date) =>
+	date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" })
+
+const isSameDay = (a: Date, b: Date) => toDateKey(a) === toDateKey(b)
+
+const getMoodMeta = (mood?: MoodType | null) => MOODS.find((item) => item.id === mood)
+
 export default function Home() {
-  const [selectedMood, setSelectedMood] = React.useState<string | null>(null)
-  const [intensity, setIntensity] = React.useState([50])
-  const [note, setNote] = React.useState("")
-  const [mounted, setMounted] = React.useState(false)
-		const [isSaving, setIsSaving] = React.useState(false)
-		const [isLoggedIn, setIsLoggedIn] = React.useState(false)
-		const loginButtonRef = React.useRef<HTMLAnchorElement | null>(null)
+	const [selectedDate, setSelectedDate] = React.useState<Date>(() => {
+		const today = new Date()
+		today.setHours(0, 0, 0, 0)
+		return today
+	})
+	const [selectedMood, setSelectedMood] = React.useState<MoodType | null>(null)
+	const [note, setNote] = React.useState("")
+	const [isNoteOpen, setIsNoteOpen] = React.useState(false)
+	const [isSaving, setIsSaving] = React.useState(false)
+	const [isLoggedIn, setIsLoggedIn] = React.useState(false)
+	const [userId, setUserId] = React.useState<string | null>(null)
+	const [tasks, setTasks] = React.useState<TaskItem[]>([])
+	const [newTaskTitle, setNewTaskTitle] = React.useState("")
+	const [isDayLoading, setIsDayLoading] = React.useState(true)
+	const [isAddTaskSheetOpen, setIsAddTaskSheetOpen] = React.useState(false)
+	const loginButtonRef = React.useRef<HTMLAnchorElement | null>(null)
+	const tasksSectionRef = React.useRef<HTMLElement | null>(null)
+	const dateScrollRef = React.useRef<HTMLDivElement | null>(null)
+	const noteOpenBeforeMoodRef = React.useRef(false)
+	const addTaskInputRef = React.useRef<HTMLInputElement | null>(null)
 
 	React.useEffect(() => {
-		setMounted(true)
-		const rawUser = localStorage.getItem("awesome-user")
-		setIsLoggedIn(Boolean(rawUser))
+		if (typeof window === "undefined") return
+		const rawUser = window.localStorage.getItem("awesome-user")
+		if (rawUser) {
+			try {
+				const parsed = JSON.parse(rawUser)
+				setUserId(parsed?.id || "guest")
+				setIsLoggedIn(true)
+				return
+			} catch (error) {
+				console.error("Failed to parse stored user", error)
+			}
+		}
+		setUserId("guest")
+		setIsLoggedIn(false)
 	}, [])
+
+	const fetchTasksForDate = React.useCallback(async (date: Date) => {
+		if (!userId) return [] as TaskItem[]
+		const res = await fetch(
+			buildApiUrl("/tasks", {
+				date: toDateKey(date),
+				user_id: userId || undefined,
+			}),
+			{ credentials: "include" }
+		)
+		if (!res.ok) {
+			throw new Error("Failed to fetch tasks")
+		}
+		const json = await res.json()
+		const items = (json?.data?.items || []) as ServerTaskItem[]
+		return items.map((item) => ({
+			id: item.id,
+			title: item.title,
+			done: item.is_done,
+		}))
+	}, [userId])
+
+	React.useEffect(() => {
+		if (!userId) return
+		let cancelled = false
+		const loadDay = async () => {
+			setIsDayLoading(true)
+			try {
+				const dayTasks = await fetchTasksForDate(selectedDate)
+				if (cancelled) return
+				setSelectedMood(null)
+				setNote("")
+				setIsNoteOpen(false)
+				setTasks(dayTasks)
+			} catch (error) {
+				console.error("Day load failed", error)
+				setTasks([])
+			} finally {
+				if (!cancelled) {
+					setIsDayLoading(false)
+				}
+			}
+		}
+		loadDay()
+		return () => {
+			cancelled = true
+		}
+	}, [fetchTasksForDate, selectedDate, userId])
 
 	const handleLogout = async () => {
 		try {
@@ -50,277 +198,455 @@ export default function Home() {
 		}
 	}
 
-  const handleSave = async () => {
-    if (!selectedMood) return
-    
-    setIsSaving(true)
-		const rawUser = localStorage.getItem("awesome-user")
-		let userId: string | undefined
-		if (rawUser) {
-			try {
-				const parsed = JSON.parse(rawUser)
-				userId = parsed?.id
-			} catch (error) {
-				console.error("Failed to parse stored user", error)
-			}
-		}
-    
+	const handleSave = async () => {
+		if (!selectedMood) return
+		setIsSaving(true)
 		const payload = {
-			user_id: userId,
+			user_id: userId ?? undefined,
 			mood_type: selectedMood,
-			intensity: Math.round(intensity[0] / 10), // Convert 0-100 to 1-10
+			intensity: 5,
 			note: note,
 			tags: [],
 		}
 
-    try {
-		const response = await fetch(buildApiUrl("/moods"), {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			credentials: "include",
-			body: JSON.stringify(payload),
-		})
+		try {
+			const response = await fetch(buildApiUrl("/moods"), {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				credentials: "include",
+				body: JSON.stringify(payload),
+			})
 
-      if (!response.ok) {
-        throw new Error('Failed to save mood')
-      }
+			if (!response.ok) {
+				throw new Error("Failed to save mood")
+			}
 
-      // Success Toast
-      toast("Recorded successfully", {
-        description: "Your mood has been saved to your journal.",
-        duration: 2000,
-      })
-      
-      setSelectedMood(null)
-      setIntensity([50])
-      setNote("")
-    } catch (error) {
-      console.error("Save error:", error)
-      toast("Something went wrong", {
-        description: "Please try again later.",
-        duration: 2000,
-      })
-    } finally {
-      setIsSaving(false)
-    }
-  }
+			await response.json()
 
-	// Soft, breathing illustration container
-	const IllustrationBanner = () => (
-		<div className="w-full aspect-square sm:aspect-[4/3] rounded-[3rem] bg-gradient-to-b from-white to-secondary/20 mb-12 flex flex-col items-center justify-center relative overflow-hidden ring-1 ring-white/50 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.05)] p-8 transition-transform duration-1000 ease-out hover:scale-[1.01]">
-			<div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.8),transparent)]" />
+			toast("Saved", {
+				description: "Mood recorded.",
+				duration: 2000,
+			})
+		} catch (error) {
+			console.error("Save error:", error)
+			toast("Save failed", {
+				description: "Please try again.",
+				duration: 2000,
+			})
+		} finally {
+			setIsSaving(false)
+		}
+	}
 
-			{/* Dynamic Placeholder Content */}
-			<div
-				className={cn(
-					"relative z-10 flex flex-col items-center transition-all duration-700",
-					selectedMood ? "scale-90 opacity-90" : "scale-100 opacity-100"
-				)}
-			>
-				{selectedMood ? (
-					<div className="w-32 h-32 rounded-full bg-white/60 blur-xl absolute -z-10 animate-pulse" />
-				) : null}
+	const toggleTask = async (taskId: string) => {
+		const target = tasks.find((task) => task.id === taskId)
+		if (!target) return
+		const nextDone = !target.done
+		setTasks((prev) =>
+			prev.map((task) => (task.id === taskId ? { ...task, done: nextDone } : task))
+		)
+		try {
+			const response = await fetch(buildApiUrl(`/tasks/${taskId}`), {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ is_done: nextDone }),
+			})
+			if (!response.ok) {
+				throw new Error("Failed to update task")
+			}
+		} catch (error) {
+			console.error("Task update failed", error)
+			setTasks((prev) =>
+				prev.map((task) => (task.id === taskId ? { ...task, done: !nextDone } : task))
+			)
+		}
+	}
 
-				<div className="w-24 h-24 rounded-full bg-white/40 flex items-center justify-center mb-6 shadow-sm backdrop-blur-md">
-					{selectedMood ? (
-						<Sparkles
-							className="w-8 h-8 text-secondary-foreground/40 animate-spin-slow"
-							strokeWidth={1}
-						/>
-					) : (
-						<CloudSun
-							className="w-8 h-8 text-muted-foreground/30"
-							strokeWidth={1}
-						/>
-					)}
-				</div>
+	const handleAddTask = async () => {
+		const title = newTaskTitle.trim()
+		if (!title || !userId) return
+		setNewTaskTitle("")
+		setIsAddTaskSheetOpen(false)
+		try {
+			const response = await fetch(buildApiUrl("/tasks"), {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({
+					user_id: userId,
+					title,
+					task_date: toDateKey(selectedDate),
+				}),
+			})
+			if (!response.ok) {
+				throw new Error("Failed to add task")
+			}
+			const json = await response.json()
+			const record = json?.data?.record as ServerTaskItem | undefined
+			if (record) {
+				setTasks((prev) => [
+					...prev,
+					{ id: record.id, title: record.title, done: record.is_done },
+				])
+			}
+		} catch (error) {
+			console.error("Task create failed", error)
+			setNewTaskTitle(title)
+		}
+	}
 
-				<p className="text-sm text-foreground/40 font-light tracking-[0.2em] uppercase">
-					{selectedMood ? "Reflecting..." : "Your Space"}
-				</p>
-			</div>
-		</div>
-	)
+	React.useEffect(() => {
+		if (isAddTaskSheetOpen && addTaskInputRef.current) {
+			setTimeout(() => {
+				addTaskInputRef.current?.focus()
+			}, 100)
+		}
+	}, [isAddTaskSheetOpen])
+
+	const dateStrip = React.useMemo(() => {
+		const weekStart = startOfWeek(selectedDate)
+		return Array.from({ length: DATE_RANGE_DAYS }, (_, index) => addDays(weekStart, index))
+	}, [selectedDate])
+
+	const selectedMoodMeta = getMoodMeta(selectedMood)
+	const completedTasks = tasks.filter((task) => task.done).length
+	const totalTasks = tasks.length
+	const taskProgress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0
 
 	return (
-		<div className="min-h-screen bg-background selection:bg-primary/30 flex justify-center">
-			<main
-				className={cn(
-					"w-full max-w-md p-8 md:p-12 pb-32 flex flex-col transition-opacity duration-1000",
-					mounted ? "opacity-100" : "opacity-0"
-				)}
-			>
-				{/* Top Greeting */}
-				<header className="pt-8 pb-10 space-y-4 safe-area-header">
-					<div className="flex items-center justify-between px-1">
-						<div className="text-xs font-semibold tracking-widest text-primary-foreground/50 uppercase">
-							{new Date().toLocaleDateString("en-US", { weekday: "long" })}
-						</div>
-						{isLoggedIn ? (
-							<button
-								className="text-xs font-semibold tracking-widest text-primary-foreground/50 uppercase hover:text-foreground/70 transition"
-								onClick={handleLogout}
-								title="Log out"
-							>
-								Log out
-							</button>
-						) : (
-							<Link
-								ref={loginButtonRef}
-								id="login-register-button"
-								href="/login"
-								className="text-xs font-semibold tracking-widest text-primary-foreground/50 uppercase hover:text-foreground/70 transition"
-							>
-								Login / Register
-							</Link>
+		<div className="min-h-screen bg-[linear-gradient(180deg,#fafafa_0%,#ffffff_45%,#ffffff_100%)] text-foreground flex justify-center">
+			<main className="w-full max-w-md pb-32">
+				<header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-black/[0.03] shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+					<div
+						className={cn(
+							"px-6 pt-[env(safe-area-inset-top)] pb-3 transition-colors",
+							selectedMoodMeta ? `bg-gradient-to-b ${selectedMoodMeta.gradient} to-white` : "bg-white"
 						)}
+					>
+						<div className="flex items-center justify-between text-[11px] tracking-[0.25em] uppercase text-muted-foreground/60">
+							<span>{formatDateLabel(selectedDate)}</span>
+							{isLoggedIn ? (
+								<button
+									onClick={handleLogout}
+									className="hover:text-foreground/70 transition"
+								>
+									Logout
+								</button>
+							) : (
+								<Link
+									ref={loginButtonRef}
+									id="login-register-button"
+									href="/login"
+									className="hover:text-foreground/70 transition"
+								>
+									Login
+								</Link>
+							)}
+						</div>
+						<h1 
+							suppressHydrationWarning
+							className="text-3xl font-serif tracking-tight text-foreground/90 mt-6 mb-2"
+						>
+							{(() => {
+								const hour = new Date().getHours()
+								if (hour < 12) return "Good Morning"
+								if (hour < 18) return "Good Afternoon"
+								return "Good Evening"
+							})()}
+						</h1>
 					</div>
-					<h1 className="text-4xl font-light text-foreground tracking-tight">
-						Have a nice day
-					</h1>
+
+					<div className="px-6 pb-3">
+						<div
+							ref={dateScrollRef}
+							className="flex gap-3 overflow-x-auto scroll-smooth py-2 no-scrollbar"
+						>
+							{dateStrip.map((date) => {
+								const isActive = isSameDay(date, selectedDate)
+								const dayKey = toDateKey(date)
+								return (
+									<button
+										key={dayKey}
+										onClick={() => {
+											setSelectedDate(date)
+											requestAnimationFrame(() => {
+												const container = dateScrollRef.current
+												if (!container) return
+												const target = container.querySelector<HTMLButtonElement>(
+													`button[data-date='${dayKey}']`
+												)
+												target?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" })
+											})
+										}}
+										data-date={dayKey}
+										className="flex flex-col items-center min-w-[52px]"
+									>
+										<div
+											className={cn(
+												"w-10 h-10 rounded-full flex items-center justify-center text-sm font-light transition",
+												isActive
+													? "bg-black/[0.06] text-foreground"
+													: "text-muted-foreground/50"
+											)}
+										>
+											{date.getDate()}
+										</div>
+										<span
+											className={cn(
+												"text-[10px] tracking-[0.2em] uppercase mt-1",
+												isActive ? "text-foreground/70" : "text-muted-foreground/40"
+											)}
+										>
+											{date.toLocaleDateString("en-US", { weekday: "short" })}
+										</span>
+									</button>
+								)
+							})}
+						</div>
+					</div>
 				</header>
 
-				{/* Illustration Area */}
-				<IllustrationBanner />
+				{/* Healing Atmosphere Banner */}
+				<div className="relative overflow-hidden bg-gradient-to-br from-[#f9f6f3] via-[#fdfcfb] to-white border-b border-black/[0.02]">
+					<div className="px-6 py-6 relative flex items-center justify-between">
+						{/* Text Content */}
+						<div className="relative z-10 max-w-[55%]">
+							<p className="text-[11px] tracking-[0.3em] uppercase text-muted-foreground/50 mb-2">
+								Today
+							</p>
+							<h2 className="text-lg font-light text-foreground/80 leading-relaxed tracking-wide">
+								Take a moment to breathe
+							</h2>
+						</div>
 
-				<div className="space-y-12">
-					{/* Mood Selection */}
-					<section className="space-y-6">
-						<h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 ml-2">
-							How do you feel?
-						</h2>
-						<div className="flex flex-wrap gap-4 justify-center">
+						{/* Coffee Bean Illustration */}
+						<div className="relative w-20 h-20 opacity-30">
+							<Image 
+								src="/coffee bean-pana.svg" 
+								alt="" 
+								width={80}
+								height={80}
+								className="w-full h-full object-contain"
+							/>
+						</div>
+					</div>
+				</div>
+
+				<div className="px-6 pt-6 space-y-6">
+					<section ref={tasksSectionRef} className="space-y-3">
+						<div className="flex items-center justify-between">
+							<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/60">Tasks</p>
+							<div className="flex items-center gap-2">
+								<p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/45">
+									{completedTasks} / {totalTasks} done
+								</p>
+								<div className="h-1.5 w-20 bg-black/[0.04] rounded-full overflow-hidden">
+									<div
+										className="h-full bg-foreground/15 rounded-full transition-[width] duration-700 ease-out"
+										style={{ width: `${taskProgress}%` }}
+									/>
+								</div>
+							</div>
+						</div>
+						<div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-3xl px-5 py-5 shadow-[0_8px_30px_rgb(0,0,0,0.012)]">
+							<div className="space-y-1">
+								{isDayLoading ? (
+									Array.from({ length: 3 }).map((_, index) => (
+										<div
+											key={`task-skeleton-${index}`}
+											className="h-12 w-full rounded-2xl bg-white/40 animate-pulse border border-white/50"
+										/>
+									))
+								) : tasks.length === 0 ? (
+									<p className="text-sm text-muted-foreground/50 text-center py-6 font-light tracking-wide">No tasks yet</p>
+								) : (
+									tasks.map((task) => (
+										<button
+											key={task.id}
+											onClick={() => toggleTask(task.id)}
+											className="w-full flex items-center justify-start text-sm text-foreground/80 rounded-2xl px-0 py-3.5 transition-all hover:bg-white/60 hover:px-5 active:scale-[0.98] group bg-transparent text-left"
+										>
+											<div className="flex items-center gap-4">
+												<span
+													className={cn(
+														"h-5 w-5 rounded-full border flex items-center justify-center transition-all duration-300",
+														task.done ? "bg-black/[0.04] border-transparent" : "bg-white border-black/[0.08] shadow-sm"
+													)}
+												>
+													<span className={cn(
+														"h-2.5 w-2.5 rounded-full bg-foreground/60 transition-all duration-300",
+														task.done ? "scale-100 opacity-100" : "scale-0 opacity-0"
+													)} />
+												</span>
+												<span className={cn(
+													"transition-all duration-300 text-[15px] font-light",
+													task.done ? "text-muted-foreground/50 line-through decoration-muted-foreground/30" : "text-foreground/90"
+												)}>
+													{task.title}
+												</span>
+											</div>
+										</button>
+									))
+								)}
+							</div>
+						</div>
+					</section>
+
+					<section className="space-y-4">
+						<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/60">Mood</p>
+						<div className="flex items-center justify-between gap-2">
 							{MOODS.map((mood) => {
 								const Icon = mood.icon
 								const isSelected = selectedMood === mood.id
 								return (
 									<button
 										key={mood.id}
-										onClick={() => setSelectedMood(mood.id)}
+										onClick={() => {
+											if (isSelected) {
+												setSelectedMood(null)
+												setIsNoteOpen(noteOpenBeforeMoodRef.current)
+												return
+											}
+											noteOpenBeforeMoodRef.current = isNoteOpen
+											setSelectedMood(mood.id)
+											setIsNoteOpen(true)
+										}}
 										className={cn(
-											"group relative flex flex-col items-center justify-center w-20 h-24 rounded-[2rem] transition-all duration-500 ease-out",
+											"flex flex-col items-center gap-1 px-2 py-2 rounded-full transition-all duration-300",
 											isSelected
-												? "bg-white shadow-lg shadow-primary/10 scale-110 -translate-y-1 ring-1 ring-black/5"
-												: "bg-transparent hover:bg-white/50 hover:scale-105"
+												? "bg-black/[0.04] text-foreground scale-105 ring-1 ring-black/10 shadow-[0_0_0_6px_rgba(0,0,0,0.03)]"
+												: "text-muted-foreground/60"
 										)}
 									>
-										<span
-											className={cn(
-												"flex items-center justify-center w-10 h-10 rounded-full mb-3 transition-colors duration-300",
-												isSelected ? mood.color : "bg-white/60"
-											)}
-										>
-											<Icon
-												className={cn(
-													"w-5 h-5 transition-colors duration-300",
-													isSelected
-														? "text-foreground/70"
-														: "text-muted-foreground/40 group-hover:text-muted-foreground/60"
-												)}
-												strokeWidth={1.5}
-											/>
-										</span>
-										<span
-											className={cn(
-												"text-xs font-medium tracking-wide transition-colors duration-300",
-												isSelected
-													? "text-foreground/80"
-													: "text-muted-foreground/50"
-											)}
-										>
-											{mood.label}
-										</span>
+										<Icon className="h-4 w-4" strokeWidth={1.5} />
+										<span className="text-[10px] tracking-[0.2em] uppercase">{mood.label}</span>
 									</button>
 								)
 							})}
 						</div>
 					</section>
 
-					{/* Expanded Content (Intensity + Note) */}
-					<div
-						className={cn(
-							"space-y-10 transition-all duration-1000 ease-in-out",
-							selectedMood
-								? "opacity-100 translate-y-0 max-h-[800px]"
-								: "opacity-0 translate-y-10 max-h-0 overflow-hidden pointer-events-none"
-						)}
-					>
-						{/* Intensity Slider */}
-						<section className="px-2">
-							<div className="flex justify-between items-end mb-6 px-2">
-								<h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
-									Intensity
-								</h2>
-								<div className="text-2xl font-light text-foreground/80 tabular-nums">
-									{intensity[0]}
-									<span className="text-sm text-muted-foreground/40 ml-1">
-										%
-									</span>
-								</div>
-							</div>
-							<div className="px-1 py-2">
-								<Slider
-									defaultValue={[50]}
-									max={100}
-									step={1}
-									value={intensity}
-									onValueChange={setIntensity}
-									className="cursor-pointer"
-								/>
-							</div>
-							<div className="flex justify-between px-1 mt-3">
-								<span className="text-[10px] uppercase tracking-widest text-muted-foreground/30">
-									Light
-								</span>
-								<span className="text-[10px] uppercase tracking-widest text-muted-foreground/30">
-									Deep
-								</span>
-							</div>
-						</section>
+					<section className="space-y-3">
+						<button
+							onClick={() => setIsNoteOpen((prev) => !prev)}
+							className="flex w-full items-center justify-between text-xs tracking-[0.3em] uppercase text-muted-foreground/60"
+						>
+							<span>Note</span>
+							<span>{isNoteOpen ? "Close" : "Open"}</span>
+						</button>
+						<div
+							className={cn(
+								"transition-all duration-500 overflow-hidden",
+								isNoteOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+							)}
+						>
+							<Textarea
+								value={note}
+								onChange={(event) => setNote(event.target.value)}
+								placeholder="Write here"
+								className="border border-black/[0.04] rounded-2xl px-4 py-4 text-sm leading-relaxed bg-[#fbfbfb] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:ring-0 focus-visible:border-black/10"
+							/>
+						</div>
+					</section>
+				</div>
 
-						{/* Note Input */}
-						<section>
-							<h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-6 ml-2">
-								Thoughts
-							</h2>
-							<Card className="border-none shadow-none bg-white/40 ring-1 ring-white/60 backdrop-blur-sm rounded-3xl overflow-hidden transition-all duration-500 focus-within:bg-white focus-within:shadow-md focus-within:ring-primary/20">
-								<Textarea
-									placeholder="Pour your mind here..."
-									className="border-none resize-none bg-transparent p-8 text-base leading-relaxed text-foreground placeholder:text-muted-foreground/30 min-h-[160px] focus-visible:ring-0 selection:bg-primary/20"
-									value={note}
-									onChange={(e) => setNote(e.target.value)}
-								/>
-							</Card>
-						</section>
+				{/* Floating Add Task Button */}
+				<button
+					onClick={() => setIsAddTaskSheetOpen(true)}
+					className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-6 z-[60] w-9 h-9 rounded-full bg-[#f6f6f6] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95"
+					aria-label="Add task"
+				>
+					<span className="text-foreground/40 text-lg font-light leading-none">+</span>
+				</button>
+
+				{/* Save Button - Only visible when mood is selected */}
+				{selectedMood && (
+					<div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[60] animate-in fade-in slide-in-from-bottom-4 duration-300">
+						<Button
+							onClick={handleSave}
+							className="rounded-full px-7 py-3.5 text-xs tracking-[0.3em] uppercase bg-foreground text-white shadow-[0_16px_35px_-22px_rgba(0,0,0,0.35)] transition-transform active:scale-95 hover:bg-foreground/90"
+							disabled={isSaving}
+						>
+							{isSaving ? "Saving" : "Save"}
+						</Button>
+					</div>
+				)}
+			</main>
+
+			{/* Add Task Bottom Sheet */}
+			{isAddTaskSheetOpen && (
+				<div className="fixed inset-0 z-[70] flex items-end justify-center">
+					<div
+						className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300"
+						onClick={() => {
+							setIsAddTaskSheetOpen(false)
+							setNewTaskTitle("")
+						}}
+					/>
+					<div 
+						className="relative w-full max-w-md bg-[#fffdfa] rounded-t-[2rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] transition-transform duration-300 ease-out"
+						style={{
+							paddingBottom: 'env(safe-area-inset-bottom)',
+						}}
+					>
+						<div className="px-6 pt-6 pb-8 space-y-4">
+							<div className="flex items-center justify-between">
+								<h3 className="text-sm tracking-[0.3em] uppercase text-muted-foreground/60">New Task</h3>
+								<button
+									onClick={() => {
+										setIsAddTaskSheetOpen(false)
+										setNewTaskTitle("")
+									}}
+									className="text-muted-foreground/50 hover:text-foreground/70 transition"
+								>
+									<span className="text-2xl font-light leading-none">×</span>
+								</button>
+							</div>
+							<input
+								ref={addTaskInputRef}
+								type="text"
+								value={newTaskTitle}
+								onChange={(event) => setNewTaskTitle(event.target.value)}
+								onKeyDown={(event) => {
+									if (event.key === "Enter") {
+										event.preventDefault()
+										handleAddTask()
+									}
+									if (event.key === "Escape") {
+										setIsAddTaskSheetOpen(false)
+										setNewTaskTitle("")
+									}
+								}}
+								placeholder="What needs to be done?"
+								className="w-full bg-white/60 border border-black/[0.06] rounded-2xl px-5 py-4 text-[15px] font-light text-foreground/90 placeholder:text-muted-foreground/40 shadow-sm focus:ring-1 focus:ring-black/10 focus:outline-none focus:border-black/10 transition-all focus:bg-white"
+							/>
+							<div className="flex gap-3 pt-2">
+								<Button
+									onClick={() => {
+										setIsAddTaskSheetOpen(false)
+										setNewTaskTitle("")
+									}}
+									className="flex-1 rounded-full bg-white/80 text-foreground/70 hover:bg-white border border-black/[0.06] shadow-sm"
+								>
+									Cancel
+								</Button>
+								<Button
+									onClick={handleAddTask}
+									disabled={!newTaskTitle.trim()}
+									className="flex-1 rounded-full bg-foreground/90 text-white hover:bg-foreground shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									Add
+								</Button>
+							</div>
+						</div>
 					</div>
 				</div>
+			)}
 
-				{/* Floating Actions */}
-				<div
-					className={cn(
-						"fixed bottom-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-700 delay-100",
-						selectedMood
-							? "translate-y-0 opacity-100"
-							: "translate-y-20 opacity-0 pointer-events-none"
-					)}
-				>
-					<Button
-						onClick={handleSave}
-						size="xl"
-						variant="floating" // Ensure button.tsx has this or use default with classes
-						className="rounded-full h-16 pl-8 pr-10 shadow-xl shadow-secondary/20 bg-foreground text-background hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-500 flex gap-4 items-center"
-						disabled={isSaving}
-					>
-						<div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-						<span className="text-sm font-medium tracking-widest uppercase">
-							{isSaving ? "Saving..." : "Save Entry"}
-						</span>
-					</Button>
-				</div>
-			</main>
-			<OnboardingGuide targetRef={loginButtonRef} isLoggedIn={isLoggedIn} />
+			<OnboardingGuide targetRef={loginButtonRef} tasksRef={tasksSectionRef} isLoggedIn={isLoggedIn} />
 		</div>
 	)
 }
