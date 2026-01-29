@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model daily_tasks {
+  id         String    @id @db.Uuid
+  user_id    String    @db.Uuid
+  title      String
+  task_date  DateTime  @db.Date
+  is_done    Boolean   @default(false)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  is_deleted Boolean   @default(false)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, task_date(sort: Desc)], map: "idx_daily_tasks_user_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mood_records {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  mood_type  String    @db.VarChar(50)
+  intensity  Int       @default(5) @db.SmallInt
+  note       String?
+  tags       Json?
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  is_deleted Boolean   @default(false)
+
+  @@index([user_id, created_at(sort: Desc)], map: "idx_user_created")
+}
+
+model user_sessions {
+  id         String   @id @db.Uuid
+  user_id    String   @db.Uuid
+  expires_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_user_id")
+}
+
+model users {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String          @unique @db.VarChar(255)
+  username      String?         @db.VarChar(50)
+  password_hash String          @db.VarChar(255)
+  avatar_url    String?         @db.VarChar(255)
+  created_at    DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime        @default(now()) @db.Timestamptz(6)
+  daily_tasks   daily_tasks[]
+  user_sessions user_sessions[]
+}

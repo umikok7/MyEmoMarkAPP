@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
-import { pool } from "@/lib/server/db"
+import { prisma } from "@/lib/prisma"
+import type { InputJsonValue } from "@/lib/generated/prisma/internal/prismaNamespace"
 import {
   fail,
   getSessionUserId,
@@ -46,15 +47,26 @@ export async function POST(request: NextRequest) {
   const note = body.note?.trim() || null
   const tags = normalizeTags(body.tags)
 
-  const recordId = uuidv4()
-  const { rows } = await pool.query(
-    `INSERT INTO mood_records (id, user_id, mood_type, intensity, note, tags)
-     VALUES ($1, $2, $3, $4, $5, $6::jsonb)
-     RETURNING id, user_id, mood_type, intensity, note, tags, created_at`,
-    [recordId, userId, moodType, intensity, note, JSON.stringify(tags)]
-  )
+  const record = await prisma.mood_records.create({
+    data: {
+      id: uuidv4(),
+      user_id: userId,
+      mood_type: moodType,
+      intensity,
+      note,
+      tags: tags as InputJsonValue,
+    },
+    select: {
+      id: true,
+      user_id: true,
+      mood_type: true,
+      intensity: true,
+      note: true,
+      tags: true,
+      created_at: true,
+    },
+  })
 
-  const record = rows[0]
   return ok({
     record: {
       id: record.id,
@@ -62,7 +74,7 @@ export async function POST(request: NextRequest) {
       mood_type: record.mood_type,
       intensity: record.intensity,
       note: record.note || "",
-      tags: Array.isArray(record.tags) ? record.tags : record.tags ? JSON.parse(record.tags) : [],
+      tags: record.tags ? (Array.isArray(record.tags) ? record.tags : []) : [],
       created_at: record.created_at,
     },
   })

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { pool } from "@/lib/server/db"
+import { prisma } from "@/lib/prisma"
 import { fail, getSessionUserId, ok, parseJson, resolveUserId } from "@/lib/server/helpers"
 
 type TaskUpdatePayload = {
@@ -20,24 +20,26 @@ export async function PATCH(
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
 
-  const { rows } = await pool.query(
-    `UPDATE daily_tasks
-     SET is_done = $1, updated_at = NOW()
-     WHERE id = $2 AND user_id = $3 AND is_deleted = false
-     RETURNING id, user_id, title, task_date, is_done, created_at`,
-    [body.is_done, taskId, userId]
-  )
-
-  if (!rows[0]) return fail(404, "Task not found")
-
-  return ok({
-    record: {
-      id: rows[0].id,
-      user_id: rows[0].user_id,
-      title: rows[0].title,
-      task_date: rows[0].task_date,
-      is_done: rows[0].is_done,
-      created_at: rows[0].created_at,
+  const record = await prisma.daily_tasks.update({
+    where: {
+      id: taskId,
+      user_id: userId,
+      is_deleted: false,
+    },
+    data: {
+      is_done: body.is_done,
+    },
+    select: {
+      id: true,
+      user_id: true,
+      title: true,
+      task_date: true,
+      is_done: true,
+      created_at: true,
     },
   })
+
+  if (!record) return fail(404, "Task not found")
+
+  return ok({ record })
 }

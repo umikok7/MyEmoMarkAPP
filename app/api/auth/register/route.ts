@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs"
 import { v4 as uuidv4 } from "uuid"
 import { NextResponse } from "next/server"
-import { pool } from "@/lib/server/db"
+import { prisma } from "@/lib/prisma"
 import {
   buildSessionCookieOptions,
   fail,
@@ -26,25 +26,38 @@ export async function POST(request: Request) {
 
   if (!email || !password) return fail(400, "Email and password required")
 
-  const exists = await pool.query("SELECT 1 FROM users WHERE email = $1", [email])
-  if (exists.rows.length) {
+  const exists = await prisma.users.findUnique({
+    where: { email },
+    select: { id: true },
+  })
+
+  if (exists) {
     return fail(409, "Email already exists")
   }
 
   const hash = await bcrypt.hash(password, 10)
   const userId = uuidv4()
-  const { rows } = await pool.query(
-    "INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, email, username, avatar_url",
-    [userId, email, username || null, hash]
-  )
-  const user = rows[0]
+
+  const user = await prisma.users.create({
+    data: {
+      id: userId,
+      email,
+      username: username || null,
+      password_hash: hash,
+    },
+    select: { id: true, email: true, username: true, avatar_url: true },
+  })
 
   const sessionId = uuidv4()
   const expiresAt = new Date(Date.now() + SESSION_COOKIE_MAX_AGE * 1000)
-  await pool.query(
-    "INSERT INTO user_sessions (id, user_id, expires_at) VALUES ($1, $2, $3)",
-    [sessionId, user.id, expiresAt]
-  )
+
+  await prisma.user_sessions.create({
+    data: {
+      id: sessionId,
+      user_id: user.id,
+      expires_at: expiresAt,
+    },
+  })
 
   const response = ok({
     user: {

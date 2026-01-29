@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
-import { pool } from "@/lib/server/db"
+import { prisma } from "@/lib/prisma"
+import type { InputJsonValue } from "@/lib/generated/prisma/internal/prismaNamespace"
 import {
   fail,
   getSessionUserId,
@@ -40,48 +41,55 @@ export async function PUT(
   const note = body.note?.trim() || null
   const tags = normalizeTags(body.tags)
 
-  const client = await pool.connect()
-  try {
-    await client.query("BEGIN")
-    const softDelete = await client.query(
-      `UPDATE mood_records
-       SET deleted_at = NOW(), is_deleted = true, updated_at = NOW()
-       WHERE id = $1 AND user_id = $2 AND is_deleted = false`,
-      [recordId, userId]
-    )
-    if (!softDelete.rowCount) {
-      await client.query("ROLLBACK")
-      return fail(404, "Record not found")
-    }
+  const softDelete = await prisma.mood_records.updateMany({
+    where: {
+      id: recordId,
+      user_id: userId,
+      is_deleted: false,
+    },
+    data: {
+      deleted_at: new Date(),
+      is_deleted: true,
+      updated_at: new Date(),
+    },
+  })
 
-    const newId = uuidv4()
-    const insert = await client.query(
-      `INSERT INTO mood_records (id, user_id, mood_type, intensity, note, tags)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
-       RETURNING id, user_id, mood_type, intensity, note, tags, created_at`,
-      [newId, userId, moodType, intensity, note, JSON.stringify(tags)]
-    )
-    await client.query("COMMIT")
-
-    const record = insert.rows[0]
-    return ok({
-      record: {
-        id: record.id,
-        user_id: record.user_id,
-        mood_type: record.mood_type,
-        intensity: record.intensity,
-        note: record.note || "",
-        tags: Array.isArray(record.tags) ? record.tags : record.tags ? JSON.parse(record.tags) : [],
-        created_at: record.created_at,
-      },
-    })
-  } catch (error) {
-    await client.query("ROLLBACK")
-    console.error("Update mood failed", error)
-    return fail(500, "Failed to update mood")
-  } finally {
-    client.release()
+  if (!softDelete.count) {
+    return fail(404, "Record not found")
   }
+
+  const newId = uuidv4()
+  const record = await prisma.mood_records.create({
+    data: {
+      id: newId,
+      user_id: userId,
+      mood_type: moodType,
+      intensity,
+      note,
+      tags: tags as InputJsonValue,
+    },
+    select: {
+      id: true,
+      user_id: true,
+      mood_type: true,
+      intensity: true,
+      note: true,
+      tags: true,
+      created_at: true,
+    },
+  })
+
+  return ok({
+    record: {
+      id: record.id,
+      user_id: record.user_id,
+      mood_type: record.mood_type,
+      intensity: record.intensity,
+      note: record.note || "",
+      tags: record.tags ? (Array.isArray(record.tags) ? record.tags : []) : [],
+      created_at: record.created_at,
+    },
+  })
 }
 
 export async function DELETE(
@@ -95,13 +103,19 @@ export async function DELETE(
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
 
-  const result = await pool.query(
-    `UPDATE mood_records
-     SET deleted_at = NOW(), is_deleted = true, updated_at = NOW()
-     WHERE id = $1 AND user_id = $2 AND is_deleted = false`,
-    [recordId, userId]
-  )
+  const result = await prisma.mood_records.updateMany({
+    where: {
+      id: recordId,
+      user_id: userId,
+      is_deleted: false,
+    },
+    data: {
+      deleted_at: new Date(),
+      is_deleted: true,
+      updated_at: new Date(),
+    },
+  })
 
-  if (!result.rowCount) return fail(404, "Record not found")
+  if (!result.count) return fail(404, "Record not found")
   return ok({ deleted_id: recordId })
 }

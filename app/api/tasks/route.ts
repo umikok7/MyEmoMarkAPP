@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
-import { pool } from "@/lib/server/db"
+import { prisma } from "@/lib/prisma"
 import {
   fail,
   getSessionUserId,
@@ -29,24 +29,28 @@ export async function GET(request: NextRequest) {
   const dateParam = parseTaskDate(query.get("date"))
   if (!dateParam) return fail(400, "date is required")
 
-  const { rows } = await pool.query(
-    `SELECT id, user_id, title, task_date, is_done, created_at
-     FROM daily_tasks
-     WHERE is_deleted = false AND user_id = $1 AND task_date = $2
-     ORDER BY created_at ASC`,
-    [userId, dateParam]
-  )
+  if (userId === "guest") {
+    return ok({ items: [] })
+  }
 
-  const items = rows.map((row) => ({
-    id: row.id,
-    user_id: row.user_id,
-    title: row.title,
-    task_date: row.task_date,
-    is_done: row.is_done,
-    created_at: row.created_at,
-  }))
+  const tasks = await prisma.daily_tasks.findMany({
+    where: {
+      is_deleted: false,
+      user_id: userId,
+      task_date: new Date(dateParam),
+    },
+    orderBy: { created_at: "asc" },
+    select: {
+      id: true,
+      user_id: true,
+      title: true,
+      task_date: true,
+      is_done: true,
+      created_at: true,
+    },
+  })
 
-  return ok({ items })
+  return ok({ items: tasks })
 }
 
 export async function POST(request: NextRequest) {
@@ -62,22 +66,22 @@ export async function POST(request: NextRequest) {
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(body.user_id || null, sessionUserId)
 
-  const recordId = uuidv4()
-  const { rows } = await pool.query(
-    `INSERT INTO daily_tasks (id, user_id, title, task_date)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, user_id, title, task_date, is_done, created_at`,
-    [recordId, userId, title, dateParam]
-  )
-
-  return ok({
-    record: {
-      id: rows[0].id,
-      user_id: rows[0].user_id,
-      title: rows[0].title,
-      task_date: rows[0].task_date,
-      is_done: rows[0].is_done,
-      created_at: rows[0].created_at,
+  const record = await prisma.daily_tasks.create({
+    data: {
+      id: uuidv4(),
+      user_id: userId,
+      title,
+      task_date: new Date(dateParam),
+    },
+    select: {
+      id: true,
+      user_id: true,
+      title: true,
+      task_date: true,
+      is_done: true,
+      created_at: true,
     },
   })
+
+  return ok({ record })
 }

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { pool } from "@/lib/server/db"
+import { prisma } from "@/lib/prisma"
 import { buildSessionCookieOptions, ok } from "@/lib/server/helpers"
 
 export async function POST(request: NextRequest) {
   const sessionId = request.cookies.get("session_id")?.value
   if (sessionId) {
-    await pool.query("DELETE FROM user_sessions WHERE id = $1", [sessionId])
+    await prisma.user_sessions.delete({
+      where: { id: sessionId },
+    })
   }
 
   const response = ok(null) as NextResponse
