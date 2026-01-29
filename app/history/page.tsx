@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 // Badge import removed
@@ -518,21 +519,23 @@ function TimelineCard({
         </div>
       </div>
 
-      {isDeleteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-md">
-          <div className="w-[92%] max-w-sm rounded-[28px] bg-[#fdfbf7] shadow-[0_25px_60px_-30px_rgba(0,0,0,0.35)] ring-1 ring-black/5 p-6 animate-[fadeScale_0.25s_ease-out]">
-            <div className="h-1 w-10 rounded-full bg-muted/60 mb-4" />
+      {isDeleteOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/10 backdrop-blur-sm" onClick={() => setIsDeleteOpen(false)}>
+          <div
+            className="w-[92%] max-w-sm rounded-[28px] bg-[#fdfbf7] shadow-[0_25px_60px_-30px_rgba(0,0,0,0.35)] ring-1 ring-black/5 p-6 animate-[fadeScale_0.25s_ease-out]"
+            onClick={(e) => e.preventDefault()}
+          >
             <h3 className="text-base font-light text-foreground/85 tracking-wide">Remove this memory?</h3>
-            <p className="text-xs text-muted-foreground/70 mt-3 leading-relaxed">
-              You can not undo this action. If this entry feels heavy, it’s okay to let it go.
+              <p className="text-xs text-muted-foreground/70 mt-3 leading-relaxed">
+              You cannot undo this action. If this entry feels heavy, it is okay to let it go.
             </p>
             <div className="mt-5 h-px w-full bg-muted/60" />
             <div className="mt-4 flex items-center justify-end gap-4 text-xs">
               <button
                 type="button"
-                className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
-                onClick={(event) => {
-                  event.stopPropagation()
+                className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault()
                   setIsDeleteOpen(false)
                 }}
               >
@@ -540,9 +543,9 @@ function TimelineCard({
               </button>
               <button
                 type="button"
-                className="text-[#a67c5b]/80 hover:text-[#8f6647] transition-opacity duration-300 active:scale-[0.98]"
-                onClick={(event) => {
-                  event.stopPropagation()
+                className="text-[#a67c5b]/80 hover:text-[#8f6647] transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault()
                   setIsDeleting(true)
                   fetch(buildApiUrl(`/moods/${entry.id}`), {
                     method: "DELETE",
@@ -579,7 +582,8 @@ function TimelineCard({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </Card>
   )

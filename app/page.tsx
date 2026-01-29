@@ -112,6 +112,7 @@ export default function Home() {
 	const [newTaskTitle, setNewTaskTitle] = React.useState("")
 	const [isDayLoading, setIsDayLoading] = React.useState(true)
 	const [isAddTaskSheetOpen, setIsAddTaskSheetOpen] = React.useState(false)
+	const [isSavingComplete, setIsSavingComplete] = React.useState(false)
 	const loginButtonRef = React.useRef<HTMLAnchorElement | null>(null)
 	const tasksSectionRef = React.useRef<HTMLElement | null>(null)
 	const dateScrollRef = React.useRef<HTMLDivElement | null>(null)
@@ -201,6 +202,7 @@ export default function Home() {
 	const handleSave = async () => {
 		if (!selectedMood) return
 		setIsSaving(true)
+
 		const payload = {
 			user_id: userId ?? undefined,
 			mood_type: selectedMood,
@@ -229,6 +231,18 @@ export default function Home() {
 				description: "Mood recorded.",
 				duration: 2000,
 			})
+
+			// 触发保存完成动画
+			setIsSavingComplete(true)
+
+			// 延迟重置状态，让动画有时间播放
+			setTimeout(() => {
+				setSelectedMood(null)
+				setNote("")
+				setIsNoteOpen(false)
+				setIsSavingComplete(false)
+			}, 600)
+
 		} catch (error) {
 			console.error("Save error:", error)
 			toast("Save failed", {
@@ -322,8 +336,9 @@ export default function Home() {
 				<header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-black/[0.03] shadow-[0_1px_0_rgba(0,0,0,0.02)]">
 					<div
 						className={cn(
-							"px-6 pt-[env(safe-area-inset-top)] pb-3 transition-colors",
-							selectedMoodMeta ? `bg-gradient-to-b ${selectedMoodMeta.gradient} to-white` : "bg-white"
+							"px-6 pt-[env(safe-area-inset-top)] pb-3 transition-all duration-500",
+							selectedMoodMeta ? `bg-gradient-to-b ${selectedMoodMeta.gradient} to-white` : "bg-white",
+							isSavingComplete && "opacity-60"
 						)}
 					>
 						<div className="flex items-center justify-between text-[11px] tracking-[0.25em] uppercase text-muted-foreground/60">
@@ -497,7 +512,10 @@ export default function Home() {
 
 					<section className="space-y-4">
 						<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/60">Mood</p>
-						<div className="flex items-center justify-between gap-2">
+						<div className={cn(
+							"flex items-center justify-between gap-2 transition-all duration-500",
+							isSavingComplete ? "opacity-40 grayscale" : "opacity-100"
+						)}>
 							{MOODS.map((mood) => {
 								const Icon = mood.icon
 								const isSelected = selectedMood === mood.id
@@ -532,7 +550,10 @@ export default function Home() {
 					<section className="space-y-3">
 						<button
 							onClick={() => setIsNoteOpen((prev) => !prev)}
-							className="flex w-full items-center justify-between text-xs tracking-[0.3em] uppercase text-muted-foreground/60"
+							className={cn(
+								"flex w-full items-center justify-between text-xs tracking-[0.3em] uppercase transition-all duration-500",
+								isSavingComplete ? "text-muted-foreground/30" : "text-muted-foreground/60"
+							)}
 						>
 							<span>Note</span>
 							<span>{isNoteOpen ? "Close" : "Open"}</span>
@@ -547,7 +568,10 @@ export default function Home() {
 								value={note}
 								onChange={(event) => setNote(event.target.value)}
 								placeholder="Write here"
-								className="border border-black/[0.04] rounded-2xl px-4 py-4 text-sm leading-relaxed bg-[#fbfbfb] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:ring-0 focus-visible:border-black/10"
+								className={cn(
+									"border border-black/[0.04] rounded-2xl px-4 py-4 text-sm leading-relaxed bg-[#fbfbfb] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:ring-0 focus-visible:border-black/10 transition-all duration-500",
+									isSavingComplete ? "opacity-40" : "opacity-100"
+								)}
 							/>
 						</div>
 					</section>
@@ -563,7 +587,7 @@ export default function Home() {
 				</button>
 
 				{/* Save Button - Only visible when mood is selected */}
-				{selectedMood && (
+				{selectedMood && !isSavingComplete && (
 					<div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[60] animate-in fade-in slide-in-from-bottom-4 duration-300">
 						<Button
 							onClick={handleSave}
@@ -572,6 +596,15 @@ export default function Home() {
 						>
 							{isSaving ? "Saving" : "Save"}
 						</Button>
+					</div>
+				)}
+
+				{/* Save Complete Animation */}
+				{isSavingComplete && (
+					<div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[60] animate-in fade-in scale-95 duration-500">
+						<div className="rounded-full px-7 py-3.5 text-xs tracking-[0.3em] uppercase bg-muted-foreground/10 text-muted-foreground/60">
+							Saved
+						</div>
 					</div>
 				)}
 			</main>

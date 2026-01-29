@@ -11,9 +11,26 @@ import { buildApiUrl } from "@/lib/api"
 type CalendarDay = {
   date: number | null
   dateString: string | null
-  mood: string | null
-  color: string | null
-  intensity: number | null
+  taskCount: number
+  taskCompleted: number
+}
+
+// Muji风格热力图颜色配置
+const HEATMAP_COLORS = [
+  { bg: "bg-[#FAFAFA]", border: "border-[#F0F0F0]", label: "无数据" },
+  { bg: "bg-[#F5F2EB]", border: "border-[#E8E4DC]", label: "1-25%" },
+  { bg: "bg-[#E8DFD0]", border: "border-[#DDD5C3]", label: "26-50%" },
+  { bg: "bg-[#C4B5A0]", border: "border-[#B8A68E]", label: "51-75%" },
+  { bg: "bg-[#8B7355]", border: "border-[#7A6548]", label: "76-100%" },
+]
+
+const getHeatmapLevel = (completed: number, total: number): number => {
+  if (total === 0) return 0
+  const rate = (completed / total) * 100
+  if (rate <= 25) return 1
+  if (rate <= 50) return 2
+  if (rate <= 75) return 3
+  return 4
 }
 
 type DonutData = {
@@ -28,36 +45,113 @@ export default function InsightsPage() {
   const [donutData, setDonutData] = React.useState<DonutData[]>([])
   const [suggestion, setSuggestion] = React.useState("")
   const [monthLabel, setMonthLabel] = React.useState("")
-  
+  const [userId, setUserId] = React.useState<string | null>(null)
+
   // Month navigation state
   const [selectedDate, setSelectedDate] = React.useState(new Date())
 
+  // 获取用户ID
   React.useEffect(() => {
+    if (typeof window === "undefined") return
+    const rawUser = window.localStorage.getItem("awesome-user")
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser)
+        setUserId(parsed?.id || "guest")
+        return
+      } catch (error) {
+        console.error("Failed to parse stored user", error)
+      }
+    }
+    setUserId("guest")
+  }, [])
+
+  React.useEffect(() => {
+    const abortController = new AbortController()
+
     const fetchInsights = async () => {
       try {
         const year = selectedDate.getFullYear()
-        const month = selectedDate.getMonth() + 1 // JavaScript months are 0-indexed
-        
-        const res = await fetch(buildApiUrl("/moods/analytics", { year, month }), {
-          credentials: "include",
-        })
-        if (!res.ok) throw new Error("Failed to fetch")
-        const json = await res.json()
-        
-        const data = json.data || {}
-        setCalendar(data.calendar || [])
-        setDonutData(data.donut_chart || [])
-        setSuggestion(data.suggestion || "")
-        setMonthLabel(data.month || "")
+        const month = selectedDate.getMonth() + 1
+
+        // 并行请求心情数据和月度任务数据
+        const [moodsRes, tasksRes] = await Promise.all([
+          fetch(buildApiUrl("/moods/analytics", { year, month }), {
+            credentials: "include",
+            signal: abortController.signal,
+          }),
+          fetch(buildApiUrl("/tasks/month", { year, month, user_id: userId || undefined }), {
+            credentials: "include",
+            signal: abortController.signal,
+          }),
+        ])
+
+        if (!moodsRes.ok) throw new Error("Failed to fetch moods")
+        const moodsJson = await moodsRes.json()
+        const moodsData = moodsJson.data || {}
+
+        // 处理月度任务数据
+        let taskMap: Record<string, { total: number; completed: number }> = {}
+        if (tasksRes.ok) {
+          const tasksJson = await tasksRes.json()
+          const tasks = tasksJson?.data?.tasks || []
+          taskMap = tasks.reduce((acc: Record<string, { total: number; completed: number }>, task: { task_date: string | Date; is_done: boolean }) => {
+            const dateStr = new Date(task.task_date).toISOString().split("T")[0]
+            if (!acc[dateStr]) {
+              acc[dateStr] = { total: 0, completed: 0 }
+            }
+            acc[dateStr].total++
+            if (task.is_done) {
+              acc[dateStr].completed++
+            }
+            return acc
+          }, {})
+        }
+
+        // 生成日历数据
+        const currentYear = year
+        const currentMonth = month - 1
+        const firstDay = new Date(currentYear, currentMonth, 1)
+        const lastDay = new Date(currentYear, currentMonth + 1, 0)
+        const totalDays = lastDay.getDate()
+        const startDayOfWeek = firstDay.getDay()
+
+        const calendar: CalendarDay[] = []
+        for (let i = 0; i < startDayOfWeek; i++) {
+          calendar.push({ date: null, dateString: null, taskCount: 0, taskCompleted: 0 })
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+          const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+          const taskData = taskMap[dateString] || { total: 0, completed: 0 }
+          calendar.push({
+            date: day,
+            dateString,
+            taskCount: taskData.total,
+            taskCompleted: taskData.completed,
+          })
+        }
+
+        setCalendar(calendar)
+        setDonutData(moodsData.donut_chart || [])
+        setSuggestion(moodsData.suggestion || "")
+        setMonthLabel(moodsData.month || "")
 
       } catch (err) {
-         console.error(err)
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error(err)
+        }
       } finally {
-        setLoading(false)
+        if (!abortController.signal.aborted) {
+          setLoading(false)
+        }
       }
     }
+
     fetchInsights()
-  }, [selectedDate])
+
+    return () => abortController.abort()
+  }, [selectedDate, userId])
   
   const goToPreviousMonth = () => {
     setLoading(true)
@@ -221,37 +315,63 @@ export default function InsightsPage() {
                 
                 {/* Calendar grid */}
                 <div className="grid grid-cols-7 gap-1">
-                  {calendar.map((day, idx) => (
-                    <div
-                      key={idx}
-                      className="aspect-square flex items-center justify-center relative"
-                    >
-                      {day.date ? (
-                        <div className="w-full h-full flex items-center justify-center rounded-lg relative">
-                          {/* Background color for mood */}
-                          {day.color && (
-                            <div 
-                              className="absolute inset-0 rounded-lg opacity-40"
-                              style={{ backgroundColor: day.color }}
-                            />
-                          )}
-                          {/* Date number */}
-                          <span className={`relative z-10 text-xs ${
-                            day.mood 
-                              ? 'text-foreground/80 font-medium' 
-                              : 'text-muted-foreground/30 font-light'
-                          }`}>
-                            {day.date}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-transparent">.</span>
-                      )}
+                  {calendar.map((day, idx) => {
+                    const heatmapLevel = getHeatmapLevel(day.taskCompleted, day.taskCount)
+                    const heatmapColor = HEATMAP_COLORS[heatmapLevel]
+
+                    return (
+                      <div
+                        key={idx}
+                        className="aspect-square flex items-center justify-center relative"
+                      >
+                        {day.date ? (
+                          <div className="w-full h-full flex items-center justify-center rounded-lg relative">
+                            {/* 热力图背景 - 有任务记录时显示 */}
+                            {day.taskCount > 0 && (
+                              <div
+                                className={`absolute inset-0 rounded-lg transition-all duration-300 ${heatmapColor.bg} ${heatmapColor.border}`}
+                              />
+                            )}
+
+                            {/* 日期数字 */}
+                            <span className={`relative z-10 text-xs ${
+                              day.taskCount > 0
+                                ? 'text-foreground/80 font-medium'
+                                : 'text-muted-foreground/30 font-light'
+                            }`}>
+                              {day.date}
+                            </span>
+
+                            {/* 完成度指示点 */}
+                            {day.taskCount > 0 && (
+                              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-current opacity-60" />
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-transparent">.</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Heatmap Legend */}
+            <div className="mt-4 pt-4 border-t border-black/[0.04]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Task Progress</span>
+                <div className="flex items-center gap-2">
+                  {HEATMAP_COLORS.map((color, idx) => (
+                    <div key={idx} className="flex items-center gap-1">
+                      <div
+                        className={`w-3 h-3 rounded-sm ${color.bg} ${color.border}`}
+                      />
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+            </div>
           </Card>
 
           {/* Small Donut Chart for Mood Distribution */}
