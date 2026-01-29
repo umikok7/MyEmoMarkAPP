@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { pool } from "@/lib/server/db"
+import { prisma } from "@/lib/prisma"
 
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 
@@ -22,19 +22,23 @@ export const parseJson = async <T>(request: Request): Promise<T | null> => {
 
 export const getSessionUserId = async (sessionId: string | null | undefined) => {
   if (!sessionId) return null
-  const { rows } = await pool.query(
-    "SELECT user_id, expires_at FROM user_sessions WHERE id = $1",
-    [sessionId]
-  )
-  if (!rows[0]) return null
-  const expiresAt = new Date(rows[0].expires_at)
+
+  const session = await prisma.user_sessions.findUnique({
+    where: { id: sessionId },
+    select: { user_id: true, expires_at: true },
+  })
+
+  if (!session) return null
+
+  const expiresAt = new Date(session.expires_at)
   if (Number.isNaN(expiresAt.getTime()) || expiresAt < new Date()) {
     return null
   }
-  return rows[0].user_id as string
+
+  return session.user_id
 }
 
-export const normalizeTags = (tags?: string[] | null) => {
+export const normalizeTags = (tags?: string[] | null | unknown) => {
   if (!tags) return []
   if (Array.isArray(tags)) return tags.filter(Boolean)
   return []
@@ -66,28 +70,34 @@ export const listMoods = async ({
   limit: number
   offset: number
 }) => {
-  const { rows } = await pool.query(
-    `SELECT id, user_id, mood_type, intensity, note, tags, created_at
-     FROM mood_records
-     WHERE is_deleted = false AND user_id = $1
-     ORDER BY created_at DESC
-     LIMIT $2 OFFSET $3`,
-    [userId, limit, offset]
-  )
-  return rows.map((row) => ({
+  if (userId === "guest") {
+    return []
+  }
+
+  const records = await prisma.mood_records.findMany({
+    where: {
+      is_deleted: false,
+      user_id: userId,
+    },
+    orderBy: { created_at: "desc" },
+    take: limit,
+    skip: offset,
+  })
+
+  return records.map((row) => ({
     id: row.id,
     user_id: row.user_id,
     mood_type: row.mood_type,
     intensity: row.intensity,
     note: row.note || "",
-    tags: Array.isArray(row.tags) ? row.tags : row.tags ? JSON.parse(row.tags) : [],
+    tags: row.tags ? (Array.isArray(row.tags) ? row.tags : []) : [],
     created_at: row.created_at,
   }))
 }
 
 export const buildAnalytics = (
-  records: Array<{ mood_type: string; intensity: number; created_at: string }>, 
-  year: number, 
+  records: Array<{ mood_type: string; intensity: number; created_at: Date }>,
+  year: number,
   month: number
 ) => {
   const pieMap: Record<string, number> = {}
@@ -108,61 +118,52 @@ export const buildAnalytics = (
     angry: "Heat",
   }
 
-  // Process records for pie chart and calendar
   records.forEach((record) => {
     pieMap[record.mood_type] = (pieMap[record.mood_type] || 0) + 1
-    
-    // For calendar: use date string as key (YYYY-MM-DD)
+
     const date = new Date(record.created_at)
-    const dateKey = date.toISOString().split('T')[0]
-    
-    // Store the most recent mood for each day
-    if (!dayMap[dateKey] || new Date(record.created_at) > new Date(dayMap[dateKey].intensity)) {
+    const dateKey = date.toISOString().split("T")[0]
+
+    if (!dayMap[dateKey] || new Date(record.created_at) > new Date(dayMap[dateKey].intensity as unknown as string)) {
       dayMap[dateKey] = {
         mood: record.mood_type,
-        intensity: record.intensity
+        intensity: record.intensity,
       }
     }
   })
 
-  // Build donut chart data (simplified pie chart)
   const donut = Object.entries(pieMap)
     .map(([mood, count]) => ({
       name: nameMap[mood] || mood,
       value: count,
       color: colorMap[mood] || "#e5e7eb",
     }))
-    .sort((a, b) => b.value - a.value) // Sort by value, descending
+    .sort((a, b) => b.value - a.value)
 
-  // Build monthly calendar grid for the specified month
   const currentYear = year
-  const currentMonth = month - 1 // JavaScript months are 0-indexed
-  
-  // Get first day of month and total days
+  const currentMonth = month - 1
+
   const firstDay = new Date(currentYear, currentMonth, 1)
   const lastDay = new Date(currentYear, currentMonth + 1, 0)
   const totalDays = lastDay.getDate()
-  const startDayOfWeek = firstDay.getDay() // 0 = Sunday
-  
-  // Build calendar array
+  const startDayOfWeek = firstDay.getDay()
+
   const calendar: Array<{
-    date: number | null;
-    dateString: string | null;
-    mood: string | null;
-    color: string | null;
-    intensity: number | null;
+    date: number | null
+    dateString: string | null
+    mood: string | null
+    color: string | null
+    intensity: number | null
   }> = []
-  
-  // Add empty cells for days before month starts
+
   for (let i = 0; i < startDayOfWeek; i++) {
     calendar.push({ date: null, dateString: null, mood: null, color: null, intensity: null })
   }
-  
-  // Add days of month
+
   for (let day = 1; day <= totalDays; day++) {
-    const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
     const dayData = dayMap[dateString]
-    
+
     calendar.push({
       date: day,
       dateString,
@@ -172,7 +173,6 @@ export const buildAnalytics = (
     })
   }
 
-  // Generate suggestion text
   let suggestionText = "Take time to breathe. Your feelings are valid."
   if (records.length > 0) {
     let topMood = ""
@@ -183,7 +183,7 @@ export const buildAnalytics = (
         topCount = count
       }
     })
-    
+
     const suggestions: Record<string, string> = {
       happy: "Your joy is beautiful. Share it with someone today.",
       calm: "You've found peace. Notice the quiet moments.",
@@ -191,11 +191,10 @@ export const buildAnalytics = (
       sad: "Be gentle with yourself. Rest is healing.",
       angry: "Your feelings matter. Take a mindful pause.",
     }
-    
+
     suggestionText = suggestions[topMood] || suggestionText
   }
 
-  // Create date for the specified month to format label
   const monthDate = new Date(currentYear, currentMonth, 1)
 
   return {
