@@ -2,10 +2,10 @@ import { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
 import type { InputJsonValue } from "@/lib/generated/prisma/internal/prismaNamespace"
+import { encrypt, decrypt } from "@/lib/encryption"
 import {
   fail,
   getSessionUserId,
-  listMoods,
   normalizeTags,
   ok,
   parseJson,
@@ -27,7 +27,30 @@ export async function GET(request: NextRequest) {
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(query.get("user_id"), sessionUserId)
 
-  const items = await listMoods({ userId, limit, offset })
+  if (userId === "guest") {
+    return ok({ items: [] })
+  }
+
+  const records = await prisma.mood_records.findMany({
+    where: {
+      is_deleted: false,
+      user_id: userId,
+    },
+    orderBy: { created_at: "desc" },
+    take: limit,
+    skip: offset,
+  })
+
+  const items = records.map((row) => ({
+    id: row.id,
+    user_id: row.user_id,
+    mood_type: row.mood_type,
+    intensity: row.intensity,
+    note: row.note ? decrypt(row.note) : "",
+    tags: row.tags ? (Array.isArray(row.tags) ? row.tags : []) : [],
+    created_at: row.created_at,
+  }))
+
   return ok({ items })
 }
 
@@ -53,7 +76,7 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       mood_type: moodType,
       intensity,
-      note,
+      note: note ? encrypt(note) : null,
       tags: tags as InputJsonValue,
     },
     select: {
@@ -73,7 +96,7 @@ export async function POST(request: NextRequest) {
       user_id: record.user_id,
       mood_type: record.mood_type,
       intensity: record.intensity,
-      note: record.note || "",
+      note: record.note ? decrypt(record.note) : "",
       tags: record.tags ? (Array.isArray(record.tags) ? record.tags : []) : [],
       created_at: record.created_at,
     },
