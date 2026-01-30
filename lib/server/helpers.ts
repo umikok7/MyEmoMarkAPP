@@ -1,3 +1,4 @@
+import { decrypt } from "@/lib/encryption"
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
@@ -89,7 +90,7 @@ export const listMoods = async ({
     user_id: row.user_id,
     mood_type: row.mood_type,
     intensity: row.intensity,
-    note: row.note || "",
+    note: row.note ? decrypt(row.note) : "",
     tags: row.tags ? (Array.isArray(row.tags) ? row.tags : []) : [],
     created_at: row.created_at,
   }))

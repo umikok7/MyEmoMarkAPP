@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
 import type { InputJsonValue } from "@/lib/generated/prisma/internal/prismaNamespace"
+import { encrypt, decrypt } from "@/lib/encryption"
 import {
   fail,
   getSessionUserId,
@@ -65,7 +66,7 @@ export async function PUT(
       user_id: userId,
       mood_type: moodType,
       intensity,
-      note,
+      note: note ? encrypt(note) : null,
       tags: tags as InputJsonValue,
     },
     select: {
@@ -85,7 +86,7 @@ export async function PUT(
       user_id: record.user_id,
       mood_type: record.mood_type,
       intensity: record.intensity,
-      note: record.note || "",
+      note: record.note ? decrypt(record.note) : "",
       tags: record.tags ? (Array.isArray(record.tags) ? record.tags : []) : [],
       created_at: record.created_at,
     },

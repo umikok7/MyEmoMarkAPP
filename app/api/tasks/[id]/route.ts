@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { decrypt } from "@/lib/encryption"
 import { fail, getSessionUserId, ok, parseJson, resolveUserId } from "@/lib/server/helpers"
 
 type TaskUpdatePayload = {
@@ -41,5 +42,10 @@ export async function PATCH(
 
   if (!record) return fail(404, "Task not found")
 
-  return ok({ record })
+  return ok({
+    record: {
+      ...record,
+      title: decrypt(record.title),
+    },
+  })
 }

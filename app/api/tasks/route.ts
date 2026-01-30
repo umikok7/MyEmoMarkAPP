@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
+import { encrypt, decrypt } from "@/lib/encryption"
 import {
   fail,
   getSessionUserId,
@@ -50,7 +51,12 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  return ok({ items: tasks })
+  const items = tasks.map((task) => ({
+    ...task,
+    title: decrypt(task.title),
+  }))
+
+  return ok({ items })
 }
 
 export async function POST(request: NextRequest) {
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
     data: {
       id: uuidv4(),
       user_id: userId,
-      title,
+      title: encrypt(title),
       task_date: new Date(dateParam),
     },
     select: {
@@ -83,5 +89,10 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  return ok({ record })
+  return ok({
+    record: {
+      ...record,
+      title: decrypt(record.title),
+    },
+  })
 }
