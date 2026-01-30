@@ -49,3 +49,33 @@ export async function PATCH(
     },
   })
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const resolvedParams = await Promise.resolve(params)
+  const taskId = resolvedParams.id
+  if (!taskId) return fail(400, "Task ID is required")
+
+  const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
+  const userId = resolveUserId(null, sessionUserId)
+
+  const record = await prisma.daily_tasks.update({
+    where: {
+      id: taskId,
+      user_id: userId,
+      is_deleted: false,
+    },
+    data: {
+      is_deleted: true,
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (!record) return fail(404, "Task not found")
+
+  return ok({ success: true })
+}

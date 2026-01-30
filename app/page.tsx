@@ -10,6 +10,7 @@ import { buildApiUrl } from "@/lib/api"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { OnboardingGuide } from "@/components/onboarding-guide"
+import { SwipeableTodoItem } from "@/components/SwipeableTodoItem"
 
 type MoodType = "happy" | "calm" | "anxious" | "sad" | "angry"
 
@@ -320,6 +321,37 @@ export default function Home() {
 		}
 	}, [isAddTaskSheetOpen])
 
+	const handleDeleteTask = async (taskId: string) => {
+		const taskToDelete = tasks.find((t) => t.id === taskId)
+		if (!taskToDelete) return
+
+		const previousTasks = [...tasks]
+
+		setTasks((prev) => prev.filter((task) => task.id !== taskId))
+
+		toast("已删除", {
+			description: taskToDelete.title,
+			duration: 2000,
+		})
+
+		try {
+			const response = await fetch(buildApiUrl(`/tasks/${taskId}`), {
+				method: "DELETE",
+				credentials: "include",
+			})
+			if (!response.ok) {
+				throw new Error("Failed to delete task")
+			}
+		} catch (error) {
+			console.error("Task delete failed", error)
+			setTasks(previousTasks)
+			toast("删除失败", {
+				description: "请重试",
+				duration: 2000,
+			})
+		}
+	}
+
 	const dateStrip = React.useMemo(() => {
 		const weekStart = startOfWeek(selectedDate)
 		return Array.from({ length: DATE_RANGE_DAYS }, (_, index) => addDays(weekStart, index))
@@ -466,44 +498,26 @@ export default function Home() {
 								</div>
 							</div>
 						</div>
-						<div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-3xl px-5 py-5 shadow-[0_8px_30px_rgb(0,0,0,0.012)]">
-							<div className="space-y-1">
+						<div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-3xl px-5 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.012)]">
+							<div className="space-y-2">
 								{isDayLoading ? (
 									Array.from({ length: 3 }).map((_, index) => (
 										<div
 											key={`task-skeleton-${index}`}
-											className="h-12 w-full rounded-2xl bg-white/40 animate-pulse border border-white/50"
+											className="h-10 w-full rounded-xl bg-white/40 animate-pulse border border-white/50"
 										/>
 									))
 								) : tasks.length === 0 ? (
 									<p className="text-sm text-muted-foreground/50 text-center py-6 font-light tracking-wide">No tasks yet</p>
 								) : (
 									tasks.map((task) => (
-										<button
-											key={task.id}
-											onClick={() => toggleTask(task.id)}
-											className="w-full flex items-center justify-start text-sm text-foreground/80 rounded-2xl px-0 py-3.5 transition-all hover:bg-white/60 hover:px-5 active:scale-[0.98] group bg-transparent text-left"
-										>
-											<div className="flex items-center gap-4">
-												<span
-													className={cn(
-														"h-5 w-5 rounded-full border flex items-center justify-center transition-all duration-300",
-														task.done ? "bg-black/[0.04] border-transparent" : "bg-white border-black/[0.08] shadow-sm"
-													)}
-												>
-													<span className={cn(
-														"h-2.5 w-2.5 rounded-full bg-foreground/60 transition-all duration-300",
-														task.done ? "scale-100 opacity-100" : "scale-0 opacity-0"
-													)} />
-												</span>
-												<span className={cn(
-													"transition-all duration-300 text-[15px] font-light",
-													task.done ? "text-muted-foreground/50 line-through decoration-muted-foreground/30" : "text-foreground/90"
-												)}>
-													{task.title}
-												</span>
-											</div>
-										</button>
+										<div key={task.id} className="-ml-[40px]">
+											<SwipeableTodoItem
+												task={task}
+												onDelete={handleDeleteTask}
+												onToggle={toggleTask}
+											/>
+										</div>
 									))
 								)}
 							</div>
