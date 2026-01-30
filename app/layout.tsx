@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: "/undraw_hot-cocoa_64a7.svg",
-    apple: "/undraw_hot-cocoa_64a7.svg",
+    apple: "/coffee-44.png",
   },
 };
 

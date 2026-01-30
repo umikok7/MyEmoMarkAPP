@@ -8,15 +8,15 @@
   "theme_color": "#fffdfa",
   "icons": [
     {
-      "src": "/undraw_hot-cocoa_64a7.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/coffee-44.png",
+      "sizes": "180x180",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/undraw_hot-cocoa_64a7.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/coffee-44.png",
+      "sizes": "180x180",
+      "type": "image/png",
       "purpose": "maskable"
     },
     {
