@@ -4,28 +4,47 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
-// Badge import removed
 import { Button } from "@/components/ui/button"
 import { CloudSun, Leaf, Wind, Droplets, Zap, Calendar, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { buildApiUrl } from "@/lib/api"
+import { AuthorBadge } from "@/components/author-badge"
+import { EmptyState } from "@/components/empty-state"
+import { SpaceSwitchDisplay } from "@/components/space-switch-display"
+import { InvitePartnerModal } from "@/components/invite-partner-modal"
+import { PendingInvitationStatus } from "@/components/pending-invitation-status"
+import { InviteAcceptModal } from "@/components/invite-accept-modal"
+import type { CoupleSpace } from "@/components/space-switch"
 
 // Mock Data removed
 type MoodType = "happy" | "calm" | "anxious" | "sad" | "angry"
 
 interface JournalEntry {
   id: string
-  date: string // ISO date string
+  date: string
   time: string
   mood: MoodType
   intensity: number
   note: string
   tags: string[]
+  author_id?: string
+  is_mine?: boolean
 }
 
 type ServerMoodItem = {
   id: string
+  mood_type: MoodType
+  intensity: number
+  note?: string
+  tags?: string[]
+  created_at: string
+}
+
+type CoupleMoodItem = {
+  id: string
+  space_id: string
+  created_by_user_id: string
   mood_type: MoodType
   intensity: number
   note?: string
@@ -53,19 +72,44 @@ export default function HistoryPage() {
   const [isFetchingMore, setIsFetchingMore] = React.useState(false)
   const sentinelRef = React.useRef<HTMLDivElement | null>(null)
 
+  const [currentSpace, setCurrentSpace] = React.useState<"personal" | "couple">("personal")
+  const [selectedCoupleSpaceId, setSelectedCoupleSpaceId] = React.useState<string | null>(null)
+  const [coupleSpaces, setCoupleSpaces] = React.useState<CoupleSpace[]>([])
+  const [loadingSpaces, setLoadingSpaces] = React.useState(true)
+  const [showInviteModal, setShowInviteModal] = React.useState(false)
+  const [showAcceptModal, setShowAcceptModal] = React.useState(false)
+  const [pendingInvitation, setPendingInvitation] = React.useState<CoupleSpace | null>(null)
+
   // Fetch data
-  const mapItem = React.useCallback((item: ServerMoodItem): JournalEntry => {
+  const mapItem = React.useCallback((item: ServerMoodItem | CoupleMoodItem): JournalEntry => {
     const dateObj = new Date(item.created_at)
+
+    if (currentSpace === "couple") {
+      const coupleItem = item as CoupleMoodItem
+      const isMine = coupleItem.created_by_user_id === userId
+      return {
+        id: coupleItem.id,
+        date: item.created_at,
+        time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        mood: coupleItem.mood_type as MoodType,
+        intensity: coupleItem.intensity,
+        note: coupleItem.note ?? "",
+        tags: coupleItem.tags || [],
+        author_id: coupleItem.created_by_user_id,
+        is_mine: isMine,
+      }
+    }
+
     return {
       id: item.id,
       date: item.created_at,
-      time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       mood: item.mood_type as MoodType,
       intensity: item.intensity,
       note: item.note ?? "",
       tags: item.tags || [],
     }
-  }, [])
+  }, [currentSpace, userId])
 
   const mapItems = React.useCallback((items: ServerMoodItem[]): JournalEntry[] => {
     return items.map(mapItem)
@@ -85,19 +129,100 @@ export default function HistoryPage() {
     setUserId("guest")
   }, [])
 
+  const fetchCoupleSpaces = React.useCallback(async () => {
+    try {
+      const res = await fetch(buildApiUrl("/couple-spaces"), { credentials: "include" })
+      if (!res.ok) return
+      const json = await res.json()
+      const spaces = (json?.data?.items || []) as CoupleSpace[]
+      setCoupleSpaces(spaces)
+
+      const acceptedSpaces = spaces.filter((s) => s.status === "accepted")
+      const pendingReceived = spaces.filter(
+        (s) => s.status === "pending" && s.creator_user_id !== userId
+      )
+
+      if (acceptedSpaces.length > 0) {
+        setSelectedCoupleSpaceId(acceptedSpaces[0].id)
+      }
+
+      if (pendingReceived.length > 0 && !showAcceptModal) {
+        setPendingInvitation(pendingReceived[0])
+        setShowAcceptModal(true)
+      }
+    } catch (error) {
+      console.error("Failed to fetch couple spaces:", error)
+    } finally {
+      setLoadingSpaces(false)
+    }
+  }, [userId, showAcceptModal])
+
+  React.useEffect(() => {
+    if (userId && userId !== "guest") {
+      fetchCoupleSpaces()
+    } else {
+      setLoadingSpaces(false)
+    }
+  }, [userId, fetchCoupleSpaces])
+
+  const handleSpaceChange = React.useCallback((space: "personal" | "couple") => {
+    setCurrentSpace(space)
+  }, [])
+
+  const handleInviteSent = React.useCallback(() => {
+    fetchCoupleSpaces()
+  }, [fetchCoupleSpaces])
+
+  const handleAccept = React.useCallback(() => {
+    setShowAcceptModal(false)
+    setPendingInvitation(null)
+    fetchCoupleSpaces()
+  }, [fetchCoupleSpaces])
+
+  const handleDecline = React.useCallback(() => {
+    setShowAcceptModal(false)
+    setPendingInvitation(null)
+    fetchCoupleSpaces()
+  }, [fetchCoupleSpaces])
+
+  const handleCancelInvite = React.useCallback(async (spaceId: string) => {
+    try {
+      await fetch(buildApiUrl(`/couple-spaces/${spaceId}`), {
+        method: "DELETE",
+        credentials: "include",
+      })
+      fetchCoupleSpaces()
+    } catch (error) {
+      console.error("Failed to cancel invitation:", error)
+    }
+  }, [fetchCoupleSpaces])
+
   const fetchHistoryPage = React.useCallback(async (offsetValue: number, append = false) => {
     if (userId === null) return
     try {
-      const res = await fetch(buildApiUrl("/moods", {
-        limit: PAGE_LIMIT,
-        offset: offsetValue,
-        user_id: userId || undefined,
-      }), { credentials: 'include' })
+      let url: string
+      if (currentSpace === "personal") {
+        url = buildApiUrl("/moods", {
+          limit: PAGE_LIMIT,
+          offset: offsetValue,
+          user_id: userId,
+        })
+      } else if (selectedCoupleSpaceId) {
+        url = buildApiUrl("/couple-moods", {
+          limit: PAGE_LIMIT,
+          offset: offsetValue,
+          space_id: selectedCoupleSpaceId,
+        })
+      } else {
+        return
+      }
+
+      const res = await fetch(url, { credentials: "include" })
       if (!res.ok) {
-        throw new Error('Failed to fetch history')
+        throw new Error("Failed to fetch history")
       }
       const json = await res.json()
-      const items = (json?.data?.items || []) as ServerMoodItem[]
+      const items = (json?.data?.items || []) as (ServerMoodItem | CoupleMoodItem)[]
       const mappedData = mapItems(items)
       if (items.length < PAGE_LIMIT) {
         setHasMore(false)
@@ -117,16 +242,16 @@ export default function HistoryPage() {
         setLoading(false)
       }
     }
-  }, [mapItems, userId])
+  }, [currentSpace, selectedCoupleSpaceId, userId, mapItems])
 
   React.useEffect(() => {
-    if (userId === null) return
+    if (userId === null || loadingSpaces) return
     setData([])
     setOffset(0)
     setHasMore(true)
     setLoading(true)
     fetchHistoryPage(0)
-  }, [fetchHistoryPage, userId])
+  }, [fetchHistoryPage, userId, currentSpace, selectedCoupleSpaceId, loadingSpaces])
 
   const loadMore = React.useCallback(async () => {
     if (!hasMore || isFetchingMore || loading) return
@@ -171,7 +296,7 @@ export default function HistoryPage() {
       <main className="w-full max-w-md">
         
         {/* Header */}
-  <header className="flex items-center gap-4 mb-10 pt-4 safe-area-header">
+        <header className="flex items-center gap-4 mb-6 pt-4 safe-area-header">
           <Link href="/">
              <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/5 -ml-2">
                <ArrowLeft className="w-5 h-5 text-muted-foreground" />
@@ -182,9 +307,67 @@ export default function HistoryPage() {
           </h1>
         </header>
 
-        {loading ? (
+        {!loadingSpaces && (
+          <div className="relative">
+            {(() => {
+              const acceptedSpaces = coupleSpaces.filter((s) => s.status === "accepted")
+              const pendingSentSpaces = coupleSpaces.filter(
+                (s) => s.status === "pending" && s.creator_user_id === userId
+              )
+              const hasAccepted = acceptedSpaces.length > 0
+              const hasPendingSent = pendingSentSpaces.length > 0
+
+              if (hasAccepted) {
+                return (
+                  <div className="mb-10">
+                    <SpaceSwitchDisplay
+                      currentSpace={currentSpace}
+                      spaces={acceptedSpaces}
+                      selectedSpaceId={currentSpace === "couple" ? acceptedSpaces[0]?.id : null}
+                      onSpaceChange={handleSpaceChange}
+                    />
+                  </div>
+                )
+              }
+
+              if (hasPendingSent) {
+                return (
+                  <PendingInvitationStatus
+                    spaceName={pendingSentSpaces[0]?.space_name}
+                    onCancel={() => handleCancelInvite(pendingSentSpaces[0].id)}
+                  />
+                )
+              }
+
+              return (
+                <div className="flex flex-col items-center">
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className={cn(
+                      "inline-flex items-center gap-2 px-6 py-3 rounded-full",
+                      "bg-stone-100 hover:bg-stone-200",
+                      "text-sm font-medium text-stone-600",
+                      "transition-all duration-300 cursor-pointer",
+                      "shadow-sm hover:shadow-md"
+                    )}
+                  >
+                    Invite Partner
+                  </button>
+                  <p className="mt-3 text-xs text-stone-400 text-center leading-relaxed">
+                    Share your emotional journey together<br />
+                    Start by inviting your partner
+                  </p>
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
+        {loading || loadingSpaces ? (
              <div className="flex justify-center pt-20 text-muted-foreground/40 animate-pulse">Loading...</div>
-        ) : (
+         ) : data.length === 0 ? (
+           <EmptyState space={currentSpace} />
+         ) : (
         /* Timeline Feed */
         <div className="space-y-10 relative">
           
@@ -207,19 +390,20 @@ export default function HistoryPage() {
               {/* Entries */}
               <div className="space-y-4 pl-14">
                 {entries.map((entry) => (
-                   <TimelineCard
-                     key={entry.id}
-                     entry={entry}
-                     onUpdated={(record) => {
-                       if (!record) return
-                       const updated = mapItem(record)
-                       setData((prev) => prev.map((item) => (item.id === entry.id ? updated : item)))
-                     }}
-                     onDeleted={(deletedId) => {
-                       if (!deletedId) return
-                       setData((prev) => prev.filter((item) => item.id !== deletedId))
-                     }}
-                   />
+                    <TimelineCard
+                      key={entry.id}
+                      entry={entry}
+                      showAuthor={currentSpace === "couple"}
+                      onUpdated={(record) => {
+                        if (!record) return
+                        const updated = mapItem(record)
+                        setData((prev) => prev.map((item) => (item.id === entry.id ? updated : item)))
+                      }}
+                      onDeleted={(deletedId) => {
+                        if (!deletedId) return
+                        setData((prev) => prev.filter((item) => item.id !== deletedId))
+                      }}
+                    />
                 ))}
               </div>
             </div>
@@ -240,6 +424,19 @@ export default function HistoryPage() {
 
         </div>
         )}
+
+        <InvitePartnerModal
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          onInvited={handleInviteSent}
+        />
+
+        <InviteAcceptModal
+          isOpen={showAcceptModal}
+          spaceName={pendingInvitation?.space_name}
+          onAccept={handleAccept}
+          onDecline={handleDecline}
+        />
       </main>
     </div>
   )
@@ -249,10 +446,12 @@ function TimelineCard({
   entry,
   onUpdated,
   onDeleted,
+  showAuthor,
 }: {
   entry: JournalEntry
   onUpdated?: (record: ServerMoodItem) => void
   onDeleted?: (deletedId: string) => void
+  showAuthor?: boolean
 }) {
   const [isExpanded, setIsExpanded] = React.useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
@@ -305,7 +504,12 @@ function TimelineCard({
         <div className="flex-1 min-w-0 pt-1">
           <div className="flex justify-between items-center mb-1">
              <h3 className="text-base font-medium text-foreground/90">{config.label}</h3>
-             <span className="text-xs font-mono text-muted-foreground/60">{entry.time}</span>
+             <div className="flex items-center gap-2">
+               <span className="text-xs font-mono text-muted-foreground/60">{entry.time}</span>
+               {showAuthor && entry.is_mine !== undefined && (
+                 <AuthorBadge isMine={entry.is_mine} />
+               )}
+             </div>
           </div>
           
           <p className={cn(
@@ -469,7 +673,7 @@ function TimelineCard({
                     onClick={(event) => {
                       event.stopPropagation()
                       setIsSaving(true)
-                      fetch(buildApiUrl(`/moods/${entry.id}`), {
+                      fetch(buildApiUrl(`/couple-moods/${entry.id}`), {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         credentials: "include",

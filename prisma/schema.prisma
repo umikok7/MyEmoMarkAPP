@@ -59,3 +59,34 @@ model users {
   daily_tasks   daily_tasks[]
   user_sessions user_sessions[]
 }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model couple_spaces {
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id_1        String                @db.Uuid
+  user_id_2        String                @db.Uuid
+  creator_user_id  String                @db.Uuid
+  status           String                @default("pending")
+  space_name       String?               @default("Our Space")
+  created_at       DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime              @default(now()) @db.Timestamptz(6)
+  deleted_at       DateTime?             @db.Timestamptz(6)
+  is_deleted       Boolean               @default(false)
+  couple_mood_records couple_mood_records[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model couple_mood_records {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  space_id          String         @db.Uuid
+  created_by_user_id String        @db.Uuid
+  mood_type         String
+  intensity         Int            @default(5) @db.SmallInt
+  note              String?
+  tags              Json?
+  created_at        DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime       @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?      @db.Timestamptz(6)
+  is_deleted        Boolean        @default(false)
+  couple_spaces     couple_spaces  @relation(fields: [space_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}

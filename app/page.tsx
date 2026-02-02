@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { OnboardingGuide } from "@/components/onboarding-guide"
 import { SwipeableTodoItem } from "@/components/SwipeableTodoItem"
+import { MoodSpaceSelector, useMoodSpaceSelector } from "@/components/mood-space-selector"
 
 type MoodType = "happy" | "calm" | "anxious" | "sad" | "angry"
 
@@ -120,6 +121,15 @@ export default function Home() {
 	const noteOpenBeforeMoodRef = React.useRef(false)
 	const addTaskInputRef = React.useRef<HTMLInputElement | null>(null)
 
+	const {
+		selectedSpace,
+		selectedCoupleSpaceId,
+		coupleSpaces,
+		loading: loadingSpaces,
+		handleSpaceChange,
+		resetToPersonal,
+	} = useMoodSpaceSelector()
+
 	React.useEffect(() => {
 		if (typeof window === "undefined") return
 		const rawUser = window.localStorage.getItem("awesome-user")
@@ -204,22 +214,48 @@ export default function Home() {
 		if (!selectedMood) return
 		setIsSaving(true)
 
-		const payload = {
-			user_id: userId ?? undefined,
-			mood_type: selectedMood,
-			intensity: 5,
-			note: note,
-			tags: [],
+		let endpoint = "/moods"
+		let body: Record<string, unknown>
+
+		if (selectedSpace === "couple" && selectedCoupleSpaceId) {
+			endpoint = "/couple-moods"
+			body = {
+				space_id: selectedCoupleSpaceId,
+				mood_type: selectedMood,
+				intensity: 5,
+				note: note,
+				tags: [],
+			}
+		} else {
+			body = {
+				user_id: userId ?? undefined,
+				mood_type: selectedMood,
+				intensity: 5,
+				note: note,
+				tags: [],
+			}
 		}
 
 		try {
-			const response = await fetch(buildApiUrl("/moods"), {
+
+			if (selectedSpace === "couple" && selectedCoupleSpaceId) {
+				endpoint = "/couple-moods"
+				body = {
+					space_id: selectedCoupleSpaceId,
+					mood_type: selectedMood,
+					intensity: 5,
+					note: note,
+					tags: [],
+				}
+			}
+
+			const response = await fetch(buildApiUrl(endpoint), {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				credentials: "include",
-				body: JSON.stringify(payload),
+				body: JSON.stringify(body),
 			})
 
 			if (!response.ok) {
@@ -228,20 +264,19 @@ export default function Home() {
 
 			await response.json()
 
-			toast("Saved", {
+			toast(selectedSpace === "couple" ? "Saved to Our Space" : "Saved", {
 				description: "Mood recorded.",
 				duration: 2000,
 			})
 
-			// 触发保存完成动画
 			setIsSavingComplete(true)
 
-			// 延迟重置状态，让动画有时间播放
 			setTimeout(() => {
 				setSelectedMood(null)
 				setNote("")
 				setIsNoteOpen(false)
 				setIsSavingComplete(false)
+				resetToPersonal()
 			}, 600)
 
 		} catch (error) {
@@ -525,7 +560,17 @@ export default function Home() {
 					</section>
 
 					<section className="space-y-4">
-						<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/60">Mood</p>
+						<div className="flex items-center justify-between">
+							<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/60">Mood</p>
+							{!loadingSpaces && selectedMood && (
+								<MoodSpaceSelector
+									selectedSpace={selectedSpace}
+									coupleSpaces={coupleSpaces}
+									selectedCoupleSpaceId={selectedCoupleSpaceId}
+									onSpaceChange={handleSpaceChange}
+								/>
+							)}
+						</div>
 						<div className={cn(
 							"flex items-center justify-between gap-2 transition-all duration-500",
 							isSavingComplete ? "opacity-40 grayscale" : "opacity-100"

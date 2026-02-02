@@ -387,7 +387,9 @@ export const ModelName = {
   daily_tasks: 'daily_tasks',
   mood_records: 'mood_records',
   user_sessions: 'user_sessions',
-  users: 'users'
+  users: 'users',
+  couple_spaces: 'couple_spaces',
+  couple_mood_records: 'couple_mood_records'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +405,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "daily_tasks" | "mood_records" | "user_sessions" | "users"
+    modelProps: "daily_tasks" | "mood_records" | "user_sessions" | "users" | "couple_spaces" | "couple_mood_records"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +705,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    couple_spaces: {
+      payload: Prisma.$couple_spacesPayload<ExtArgs>
+      fields: Prisma.couple_spacesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.couple_spacesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.couple_spacesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>
+        }
+        findFirst: {
+          args: Prisma.couple_spacesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.couple_spacesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>
+        }
+        findMany: {
+          args: Prisma.couple_spacesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>[]
+        }
+        create: {
+          args: Prisma.couple_spacesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>
+        }
+        createMany: {
+          args: Prisma.couple_spacesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.couple_spacesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>[]
+        }
+        delete: {
+          args: Prisma.couple_spacesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>
+        }
+        update: {
+          args: Prisma.couple_spacesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>
+        }
+        deleteMany: {
+          args: Prisma.couple_spacesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.couple_spacesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.couple_spacesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>[]
+        }
+        upsert: {
+          args: Prisma.couple_spacesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_spacesPayload>
+        }
+        aggregate: {
+          args: Prisma.Couple_spacesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCouple_spaces>
+        }
+        groupBy: {
+          args: Prisma.couple_spacesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Couple_spacesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.couple_spacesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Couple_spacesCountAggregateOutputType> | number
+        }
+      }
+    }
+    couple_mood_records: {
+      payload: Prisma.$couple_mood_recordsPayload<ExtArgs>
+      fields: Prisma.couple_mood_recordsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.couple_mood_recordsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.couple_mood_recordsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>
+        }
+        findFirst: {
+          args: Prisma.couple_mood_recordsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.couple_mood_recordsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>
+        }
+        findMany: {
+          args: Prisma.couple_mood_recordsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>[]
+        }
+        create: {
+          args: Prisma.couple_mood_recordsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>
+        }
+        createMany: {
+          args: Prisma.couple_mood_recordsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.couple_mood_recordsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>[]
+        }
+        delete: {
+          args: Prisma.couple_mood_recordsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>
+        }
+        update: {
+          args: Prisma.couple_mood_recordsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>
+        }
+        deleteMany: {
+          args: Prisma.couple_mood_recordsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.couple_mood_recordsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.couple_mood_recordsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>[]
+        }
+        upsert: {
+          args: Prisma.couple_mood_recordsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$couple_mood_recordsPayload>
+        }
+        aggregate: {
+          args: Prisma.Couple_mood_recordsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCouple_mood_records>
+        }
+        groupBy: {
+          args: Prisma.couple_mood_recordsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Couple_mood_recordsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.couple_mood_recordsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Couple_mood_recordsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -794,6 +944,39 @@ export const UsersScalarFieldEnum = {
 } as const
 
 export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
+
+
+export const Couple_spacesScalarFieldEnum = {
+  id: 'id',
+  user_id_1: 'user_id_1',
+  user_id_2: 'user_id_2',
+  creator_user_id: 'creator_user_id',
+  status: 'status',
+  space_name: 'space_name',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  deleted_at: 'deleted_at',
+  is_deleted: 'is_deleted'
+} as const
+
+export type Couple_spacesScalarFieldEnum = (typeof Couple_spacesScalarFieldEnum)[keyof typeof Couple_spacesScalarFieldEnum]
+
+
+export const Couple_mood_recordsScalarFieldEnum = {
+  id: 'id',
+  space_id: 'space_id',
+  created_by_user_id: 'created_by_user_id',
+  mood_type: 'mood_type',
+  intensity: 'intensity',
+  note: 'note',
+  tags: 'tags',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  deleted_at: 'deleted_at',
+  is_deleted: 'is_deleted'
+} as const
+
+export type Couple_mood_recordsScalarFieldEnum = (typeof Couple_mood_recordsScalarFieldEnum)[keyof typeof Couple_mood_recordsScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1018,6 +1201,8 @@ export type GlobalOmitConfig = {
   mood_records?: Prisma.mood_recordsOmit
   user_sessions?: Prisma.user_sessionsOmit
   users?: Prisma.usersOmit
+  couple_spaces?: Prisma.couple_spacesOmit
+  couple_mood_records?: Prisma.couple_mood_recordsOmit
 }
 
 /* Types for Logging */

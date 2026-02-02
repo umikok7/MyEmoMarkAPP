@@ -54,7 +54,9 @@ export const ModelName = {
   daily_tasks: 'daily_tasks',
   mood_records: 'mood_records',
   user_sessions: 'user_sessions',
-  users: 'users'
+  users: 'users',
+  couple_spaces: 'couple_spaces',
+  couple_mood_records: 'couple_mood_records'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -125,6 +127,39 @@ export const UsersScalarFieldEnum = {
 } as const
 
 export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
+
+
+export const Couple_spacesScalarFieldEnum = {
+  id: 'id',
+  user_id_1: 'user_id_1',
+  user_id_2: 'user_id_2',
+  creator_user_id: 'creator_user_id',
+  status: 'status',
+  space_name: 'space_name',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  deleted_at: 'deleted_at',
+  is_deleted: 'is_deleted'
+} as const
+
+export type Couple_spacesScalarFieldEnum = (typeof Couple_spacesScalarFieldEnum)[keyof typeof Couple_spacesScalarFieldEnum]
+
+
+export const Couple_mood_recordsScalarFieldEnum = {
+  id: 'id',
+  space_id: 'space_id',
+  created_by_user_id: 'created_by_user_id',
+  mood_type: 'mood_type',
+  intensity: 'intensity',
+  note: 'note',
+  tags: 'tags',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  deleted_at: 'deleted_at',
+  is_deleted: 'is_deleted'
+} as const
+
+export type Couple_mood_recordsScalarFieldEnum = (typeof Couple_mood_recordsScalarFieldEnum)[keyof typeof Couple_mood_recordsScalarFieldEnum]
 
 
 export const SortOrder = {

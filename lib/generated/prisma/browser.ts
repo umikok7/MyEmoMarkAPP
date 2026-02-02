@@ -37,3 +37,13 @@ export type user_sessions = Prisma.user_sessionsModel
  * 
  */
 export type users = Prisma.usersModel
+/**
+ * Model couple_spaces
+ * This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+ */
+export type couple_spaces = Prisma.couple_spacesModel
+/**
+ * Model couple_mood_records
+ * This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+ */
+export type couple_mood_records = Prisma.couple_mood_recordsModel
