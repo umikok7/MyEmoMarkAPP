@@ -430,7 +430,7 @@ export default function Home() {
 						</div>
 						<h1 
 							suppressHydrationWarning
-							className="text-3xl font-serif tracking-tight text-foreground/90 mt-6 mb-2"
+							className="text-4xl font-serif font-semibold tracking-tight text-foreground/90 mt-6 mb-2 text-center"
 						>
 							{(() => {
 								const hour = new Date().getHours()
@@ -444,7 +444,7 @@ export default function Home() {
 					<div className="px-6 pb-3">
 						<div
 							ref={dateScrollRef}
-							className="flex gap-3 overflow-x-auto scroll-smooth py-2 no-scrollbar"
+							className="flex gap-4 overflow-x-auto scroll-smooth py-3 no-scrollbar"
 						>
 							{dateStrip.map((date) => {
 								const isActive = isSameDay(date, selectedDate)
@@ -468,18 +468,18 @@ export default function Home() {
 									>
 										<div
 											className={cn(
-												"w-10 h-10 rounded-full flex items-center justify-center text-sm font-light transition",
+												"w-12 h-12 rounded-full flex items-center justify-center text-base font-semibold transition",
 												isActive
 													? "bg-black/[0.06] text-foreground"
-													: "text-muted-foreground/50"
+													: "text-muted-foreground/60"
 											)}
 										>
 											{date.getDate()}
 										</div>
 										<span
 											className={cn(
-												"text-[10px] tracking-[0.2em] uppercase mt-1",
-												isActive ? "text-foreground/70" : "text-muted-foreground/40"
+												"text-xs tracking-[0.2em] uppercase mt-1",
+												isActive ? "text-foreground/80" : "text-muted-foreground/50"
 											)}
 										>
 											{date.toLocaleDateString("en-US", { weekday: "short" })}
@@ -493,13 +493,13 @@ export default function Home() {
 
 				{/* Healing Atmosphere Banner */}
 				<div className="relative overflow-hidden bg-gradient-to-br from-[#f9f6f3] via-[#fdfcfb] to-white border-b border-black/[0.02]">
-					<div className="px-6 py-6 relative flex items-center justify-between">
+					<div className="px-6 py-8 relative flex items-center justify-between">
 						{/* Text Content */}
 						<div className="relative z-10 max-w-[55%]">
-							<p className="text-[11px] tracking-[0.3em] uppercase text-muted-foreground/50 mb-2">
+							<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/70 font-medium mb-2">
 								Today
 							</p>
-							<h2 className="text-lg font-light text-foreground/80 leading-relaxed tracking-wide">
+							<h2 className="text-xl font-normal text-foreground/90 leading-relaxed tracking-wide">
 								Take a moment to breathe
 							</h2>
 						</div>
@@ -520,9 +520,9 @@ export default function Home() {
 				<div className="px-6 pt-6 space-y-6">
 					<section ref={tasksSectionRef} className="space-y-3">
 						<div className="flex items-center justify-between">
-							<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/60">Tasks</p>
+							<p className="text-sm tracking-[0.3em] uppercase text-muted-foreground/80 font-medium">Tasks</p>
 							<div className="flex items-center gap-2">
-								<p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/45">
+								<p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/50">
 									{completedTasks} / {totalTasks} done
 								</p>
 								<div className="h-1.5 w-20 bg-black/[0.04] rounded-full overflow-hidden">
@@ -543,7 +543,7 @@ export default function Home() {
 										/>
 									))
 								) : tasks.length === 0 ? (
-									<p className="text-sm text-muted-foreground/50 text-center py-6 font-light tracking-wide">No tasks yet</p>
+									<p className="text-sm text-muted-foreground/60 text-center py-6 font-normal tracking-wide">No tasks yet</p>
 								) : (
 									tasks.map((task) => (
 										<div key={task.id} className="-ml-[40px]">
@@ -561,7 +561,7 @@ export default function Home() {
 
 					<section className="space-y-4">
 						<div className="flex items-center justify-between">
-							<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/60">Mood</p>
+							<p className="text-sm tracking-[0.3em] uppercase text-muted-foreground/80 font-medium">Mood</p>
 							{!loadingSpaces && selectedMood && (
 								<MoodSpaceSelector
 									selectedSpace={selectedSpace}
@@ -592,14 +592,14 @@ export default function Home() {
 											setIsNoteOpen(true)
 										}}
 										className={cn(
-											"flex flex-col items-center gap-1 px-2 py-2 rounded-full transition-all duration-300",
+											"flex flex-col items-center gap-1.5 px-4 py-3 rounded-full transition-all duration-300",
 											isSelected
-												? "bg-black/[0.04] text-foreground scale-105 ring-1 ring-black/10 shadow-[0_0_0_6px_rgba(0,0,0,0.03)]"
-												: "text-muted-foreground/60"
+												? "bg-black/[0.06] text-foreground scale-105 ring-1 ring-black/10 shadow-[0_0_0_6px_rgba(0,0,0,0.03)] font-medium"
+												: "text-muted-foreground/70"
 										)}
 									>
-										<Icon className="h-4 w-4" strokeWidth={1.5} />
-										<span className="text-[10px] tracking-[0.2em] uppercase">{mood.label}</span>
+										<Icon className="h-5 w-5" strokeWidth={1.5} />
+										<span className="text-[11px] tracking-[0.2em] uppercase font-normal">{mood.label}</span>
 									</button>
 								)
 							})}
@@ -610,8 +610,8 @@ export default function Home() {
 						<button
 							onClick={() => setIsNoteOpen((prev) => !prev)}
 							className={cn(
-								"flex w-full items-center justify-between text-xs tracking-[0.3em] uppercase transition-all duration-500",
-								isSavingComplete ? "text-muted-foreground/30" : "text-muted-foreground/60"
+								"flex w-full items-center justify-between text-sm tracking-[0.3em] uppercase transition-all duration-500 font-medium",
+								isSavingComplete ? "text-muted-foreground/40" : "text-muted-foreground/80"
 							)}
 						>
 							<span>Note</span>
@@ -642,7 +642,7 @@ export default function Home() {
 					className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-6 z-[60] w-9 h-9 rounded-full bg-[#f6f6f6] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95"
 					aria-label="Add task"
 				>
-					<span className="text-foreground/40 text-lg font-light leading-none">+</span>
+					<span className="text-foreground/50 text-lg font-normal leading-none">+</span>
 				</button>
 
 				{/* Save Button - Only visible when mood is selected */}
@@ -686,15 +686,15 @@ export default function Home() {
 					>
 						<div className="px-6 pt-6 pb-8 space-y-4">
 							<div className="flex items-center justify-between">
-								<h3 className="text-sm tracking-[0.3em] uppercase text-muted-foreground/60">New Task</h3>
+								<h3 className="text-sm tracking-[0.3em] uppercase text-muted-foreground/70">New Task</h3>
 								<button
 									onClick={() => {
 										setIsAddTaskSheetOpen(false)
 										setNewTaskTitle("")
 									}}
-									className="text-muted-foreground/50 hover:text-foreground/70 transition"
+									className="text-muted-foreground/60 hover:text-foreground/80 transition"
 								>
-									<span className="text-2xl font-light leading-none">×</span>
+									<span className="text-2xl font-normal leading-none">×</span>
 								</button>
 							</div>
 							<input

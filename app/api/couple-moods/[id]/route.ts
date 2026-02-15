@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server"
-import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
 import type { InputJsonValue } from "@/lib/generated/prisma/internal/prismaNamespace"
 import { encrypt, decrypt } from "@/lib/encryption"
@@ -72,34 +71,15 @@ export async function PUT(
   const note = body.note?.trim() || null
   const tags = normalizeTags(body.tags)
 
-  // 软删除旧记录
-  const softDelete = await prisma.couple_mood_records.updateMany({
-    where: {
-      id: recordId,
-      is_deleted: false,
-    },
+  // 直接更新记录
+  const record = await prisma.couple_mood_records.update({
+    where: { id: recordId },
     data: {
-      deleted_at: new Date(),
-      is_deleted: true,
-      updated_at: new Date(),
-    },
-  })
-
-  if (!softDelete.count) {
-    return fail(404, "Record not found")
-  }
-
-  // 创建新记录（保留原创建者信息）
-  const newId = uuidv4()
-  const record = await prisma.couple_mood_records.create({
-    data: {
-      id: newId,
-      space_id: existingRecord.space_id,
-      created_by_user_id: existingRecord.created_by_user_id, // 保留原创建者
       mood_type: moodType,
       intensity,
       note: note ? encrypt(note) : null,
       tags: tags as InputJsonValue,
+      updated_at: new Date(),
     },
     select: {
       id: true,

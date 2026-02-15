@@ -394,6 +394,7 @@ export default function HistoryPage() {
                       key={entry.id}
                       entry={entry}
                       showAuthor={currentSpace === "couple"}
+                      currentSpace={currentSpace}
                       onUpdated={(record) => {
                         if (!record) return
                         const updated = mapItem(record)
@@ -447,11 +448,13 @@ function TimelineCard({
   onUpdated,
   onDeleted,
   showAuthor,
+  currentSpace,
 }: {
   entry: JournalEntry
   onUpdated?: (record: ServerMoodItem) => void
   onDeleted?: (deletedId: string) => void
   showAuthor?: boolean
+  currentSpace?: "personal" | "couple"
 }) {
   const [isExpanded, setIsExpanded] = React.useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
@@ -673,7 +676,10 @@ function TimelineCard({
                     onClick={(event) => {
                       event.stopPropagation()
                       setIsSaving(true)
-                      fetch(buildApiUrl(`/couple-moods/${entry.id}`), {
+                      const apiEndpoint = currentSpace === "couple"
+                        ? `/couple-moods/${entry.id}`
+                        : `/moods/${entry.id}`
+                      fetch(buildApiUrl(apiEndpoint), {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         credentials: "include",
@@ -751,7 +757,10 @@ function TimelineCard({
                 onClick={(e) => {
                   e.preventDefault()
                   setIsDeleting(true)
-                  fetch(buildApiUrl(`/moods/${entry.id}`), {
+                  const deleteApiEndpoint = currentSpace === "couple"
+                    ? `/couple-moods/${entry.id}`
+                    : `/moods/${entry.id}`
+                  fetch(buildApiUrl(deleteApiEndpoint), {
                     method: "DELETE",
                     credentials: "include",
                   })
