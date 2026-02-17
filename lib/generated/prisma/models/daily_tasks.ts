@@ -30,6 +30,7 @@ export type Daily_tasksMinAggregateOutputType = {
   title: string | null
   task_date: Date | null
   is_done: boolean | null
+  is_pinned: boolean | null
   created_at: Date | null
   updated_at: Date | null
   deleted_at: Date | null
@@ -42,6 +43,7 @@ export type Daily_tasksMaxAggregateOutputType = {
   title: string | null
   task_date: Date | null
   is_done: boolean | null
+  is_pinned: boolean | null
   created_at: Date | null
   updated_at: Date | null
   deleted_at: Date | null
@@ -54,6 +56,7 @@ export type Daily_tasksCountAggregateOutputType = {
   title: number
   task_date: number
   is_done: number
+  is_pinned: number
   created_at: number
   updated_at: number
   deleted_at: number
@@ -68,6 +71,7 @@ export type Daily_tasksMinAggregateInputType = {
   title?: true
   task_date?: true
   is_done?: true
+  is_pinned?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -80,6 +84,7 @@ export type Daily_tasksMaxAggregateInputType = {
   title?: true
   task_date?: true
   is_done?: true
+  is_pinned?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -92,6 +97,7 @@ export type Daily_tasksCountAggregateInputType = {
   title?: true
   task_date?: true
   is_done?: true
+  is_pinned?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -177,6 +183,7 @@ export type Daily_tasksGroupByOutputType = {
   title: string
   task_date: Date
   is_done: boolean
+  is_pinned: boolean
   created_at: Date
   updated_at: Date
   deleted_at: Date | null
@@ -210,6 +217,7 @@ export type daily_tasksWhereInput = {
   title?: Prisma.StringFilter<"daily_tasks"> | string
   task_date?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   is_done?: Prisma.BoolFilter<"daily_tasks"> | boolean
+  is_pinned?: Prisma.BoolFilter<"daily_tasks"> | boolean
   created_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
@@ -223,6 +231,7 @@ export type daily_tasksOrderByWithRelationInput = {
   title?: Prisma.SortOrder
   task_date?: Prisma.SortOrder
   is_done?: Prisma.SortOrder
+  is_pinned?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -239,6 +248,7 @@ export type daily_tasksWhereUniqueInput = Prisma.AtLeast<{
   title?: Prisma.StringFilter<"daily_tasks"> | string
   task_date?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   is_done?: Prisma.BoolFilter<"daily_tasks"> | boolean
+  is_pinned?: Prisma.BoolFilter<"daily_tasks"> | boolean
   created_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
@@ -252,6 +262,7 @@ export type daily_tasksOrderByWithAggregationInput = {
   title?: Prisma.SortOrder
   task_date?: Prisma.SortOrder
   is_done?: Prisma.SortOrder
+  is_pinned?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -270,6 +281,7 @@ export type daily_tasksScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"daily_tasks"> | string
   task_date?: Prisma.DateTimeWithAggregatesFilter<"daily_tasks"> | Date | string
   is_done?: Prisma.BoolWithAggregatesFilter<"daily_tasks"> | boolean
+  is_pinned?: Prisma.BoolWithAggregatesFilter<"daily_tasks"> | boolean
   created_at?: Prisma.DateTimeWithAggregatesFilter<"daily_tasks"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"daily_tasks"> | Date | string
   deleted_at?: Prisma.DateTimeNullableWithAggregatesFilter<"daily_tasks"> | Date | string | null
@@ -281,6 +293,7 @@ export type daily_tasksCreateInput = {
   title: string
   task_date: Date | string
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -294,6 +307,7 @@ export type daily_tasksUncheckedCreateInput = {
   title: string
   task_date: Date | string
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -305,6 +319,7 @@ export type daily_tasksUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   task_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_done?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -318,6 +333,7 @@ export type daily_tasksUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   task_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_done?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -330,6 +346,7 @@ export type daily_tasksCreateManyInput = {
   title: string
   task_date: Date | string
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -341,6 +358,7 @@ export type daily_tasksUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   task_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_done?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -353,6 +371,7 @@ export type daily_tasksUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   task_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_done?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -365,6 +384,7 @@ export type daily_tasksCountOrderByAggregateInput = {
   title?: Prisma.SortOrder
   task_date?: Prisma.SortOrder
   is_done?: Prisma.SortOrder
+  is_pinned?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -377,6 +397,7 @@ export type daily_tasksMaxOrderByAggregateInput = {
   title?: Prisma.SortOrder
   task_date?: Prisma.SortOrder
   is_done?: Prisma.SortOrder
+  is_pinned?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -389,6 +410,7 @@ export type daily_tasksMinOrderByAggregateInput = {
   title?: Prisma.SortOrder
   task_date?: Prisma.SortOrder
   is_done?: Prisma.SortOrder
+  is_pinned?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -468,6 +490,7 @@ export type daily_tasksCreateWithoutUsersInput = {
   title: string
   task_date: Date | string
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -479,6 +502,7 @@ export type daily_tasksUncheckedCreateWithoutUsersInput = {
   title: string
   task_date: Date | string
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -520,6 +544,7 @@ export type daily_tasksScalarWhereInput = {
   title?: Prisma.StringFilter<"daily_tasks"> | string
   task_date?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   is_done?: Prisma.BoolFilter<"daily_tasks"> | boolean
+  is_pinned?: Prisma.BoolFilter<"daily_tasks"> | boolean
   created_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
@@ -531,6 +556,7 @@ export type daily_tasksCreateManyUsersInput = {
   title: string
   task_date: Date | string
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -542,6 +568,7 @@ export type daily_tasksUpdateWithoutUsersInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   task_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_done?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -553,6 +580,7 @@ export type daily_tasksUncheckedUpdateWithoutUsersInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   task_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_done?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -564,6 +592,7 @@ export type daily_tasksUncheckedUpdateManyWithoutUsersInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   task_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   is_done?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -578,6 +607,7 @@ export type daily_tasksSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   title?: boolean
   task_date?: boolean
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -591,6 +621,7 @@ export type daily_tasksSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   title?: boolean
   task_date?: boolean
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -604,6 +635,7 @@ export type daily_tasksSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   title?: boolean
   task_date?: boolean
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -617,13 +649,14 @@ export type daily_tasksSelectScalar = {
   title?: boolean
   task_date?: boolean
   is_done?: boolean
+  is_pinned?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
   is_deleted?: boolean
 }
 
-export type daily_tasksOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "task_date" | "is_done" | "created_at" | "updated_at" | "deleted_at" | "is_deleted", ExtArgs["result"]["daily_tasks"]>
+export type daily_tasksOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "task_date" | "is_done" | "is_pinned" | "created_at" | "updated_at" | "deleted_at" | "is_deleted", ExtArgs["result"]["daily_tasks"]>
 export type daily_tasksInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }
@@ -645,6 +678,7 @@ export type $daily_tasksPayload<ExtArgs extends runtime.Types.Extensions.Interna
     title: string
     task_date: Date
     is_done: boolean
+    is_pinned: boolean
     created_at: Date
     updated_at: Date
     deleted_at: Date | null
@@ -1078,6 +1112,7 @@ export interface daily_tasksFieldRefs {
   readonly title: Prisma.FieldRef<"daily_tasks", 'String'>
   readonly task_date: Prisma.FieldRef<"daily_tasks", 'DateTime'>
   readonly is_done: Prisma.FieldRef<"daily_tasks", 'Boolean'>
+  readonly is_pinned: Prisma.FieldRef<"daily_tasks", 'Boolean'>
   readonly created_at: Prisma.FieldRef<"daily_tasks", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"daily_tasks", 'DateTime'>
   readonly deleted_at: Prisma.FieldRef<"daily_tasks", 'DateTime'>

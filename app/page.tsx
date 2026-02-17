@@ -19,12 +19,14 @@ type TaskItem = {
 	id: string
 	title: string
 	done: boolean
+	is_pinned?: boolean
 }
 
 type ServerTaskItem = {
 	id: string
 	title: string
 	is_done: boolean
+	is_pinned?: boolean
 	created_at: string
 }
 
@@ -111,6 +113,7 @@ export default function Home() {
 	const [isLoggedIn, setIsLoggedIn] = React.useState(false)
 	const [userId, setUserId] = React.useState<string | null>(null)
 	const [tasks, setTasks] = React.useState<TaskItem[]>([])
+	const [pinnedTasks, setPinnedTasks] = React.useState<TaskItem[]>([])
 	const [newTaskTitle, setNewTaskTitle] = React.useState("")
 	const [isDayLoading, setIsDayLoading] = React.useState(true)
 	const [isAddTaskSheetOpen, setIsAddTaskSheetOpen] = React.useState(false)
@@ -165,6 +168,29 @@ export default function Home() {
 			id: item.id,
 			title: item.title,
 			done: item.is_done,
+			is_pinned: item.is_pinned,
+		}))
+	}, [userId])
+
+	const fetchPinnedTasks = React.useCallback(async () => {
+		if (!userId || userId === "guest") return [] as TaskItem[]
+		const res = await fetch(
+			buildApiUrl("/tasks", {
+				include_pinned: "true",
+				user_id: userId || undefined,
+			}),
+			{ credentials: "include" }
+		)
+		if (!res.ok) {
+			throw new Error("Failed to fetch pinned tasks")
+		}
+		const json = await res.json()
+		const items = (json?.data?.items || []) as ServerTaskItem[]
+		return items.map((item) => ({
+			id: item.id,
+			title: item.title,
+			done: item.is_done,
+			is_pinned: true,
 		}))
 	}, [userId])
 
@@ -174,15 +200,21 @@ export default function Home() {
 		const loadDay = async () => {
 			setIsDayLoading(true)
 			try {
-				const dayTasks = await fetchTasksForDate(selectedDate)
+				const [dayTasks, pinned] = await Promise.all([
+					fetchTasksForDate(selectedDate),
+					fetchPinnedTasks(),
+				])
 				if (cancelled) return
 				setSelectedMood(null)
 				setNote("")
 				setIsNoteOpen(false)
-				setTasks(dayTasks)
+				const pinnedIds = new Set(pinned.map((t) => t.id))
+				setTasks(dayTasks.filter((t) => !pinnedIds.has(t.id)))
+				setPinnedTasks(pinned)
 			} catch (error) {
 				console.error("Day load failed", error)
 				setTasks([])
+				setPinnedTasks([])
 			} finally {
 				if (!cancelled) {
 					setIsDayLoading(false)
@@ -193,7 +225,7 @@ export default function Home() {
 		return () => {
 			cancelled = true
 		}
-	}, [fetchTasksForDate, selectedDate, userId])
+	}, [fetchTasksForDate, fetchPinnedTasks, selectedDate, userId])
 
 	const handleLogout = async () => {
 		try {
@@ -292,7 +324,31 @@ export default function Home() {
 
 	const toggleTask = async (taskId: string) => {
 		const target = tasks.find((task) => task.id === taskId)
-		if (!target) return
+		if (!target) {
+			const pinnedTarget = pinnedTasks.find((task) => task.id === taskId)
+			if (!pinnedTarget) return
+			const nextDone = !pinnedTarget.done
+			setPinnedTasks((prev) =>
+				prev.map((task) => (task.id === taskId ? { ...task, done: nextDone } : task))
+			)
+			try {
+				const response = await fetch(buildApiUrl(`/tasks/${taskId}`), {
+					method: "PATCH",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({ is_done: nextDone }),
+				})
+				if (!response.ok) {
+					throw new Error("Failed to update task")
+				}
+			} catch (error) {
+				console.error("Task update failed", error)
+				setPinnedTasks((prev) =>
+					prev.map((task) => (task.id === taskId ? { ...task, done: !nextDone } : task))
+				)
+			}
+			return
+		}
 		const nextDone = !target.done
 		setTasks((prev) =>
 			prev.map((task) => (task.id === taskId ? { ...task, done: nextDone } : task))
@@ -312,6 +368,63 @@ export default function Home() {
 			setTasks((prev) =>
 				prev.map((task) => (task.id === taskId ? { ...task, done: !nextDone } : task))
 			)
+		}
+	}
+
+	const togglePin = async (taskId: string) => {
+		const isPinning = !pinnedTasks.some((t) => t.id === taskId)
+		
+		if (isPinning) {
+			const taskToPin = tasks.find((t) => t.id === taskId)
+			if (!taskToPin) return
+			setTasks((prev) => prev.filter((t) => t.id !== taskId))
+			setPinnedTasks((prev) => [...prev, { ...taskToPin, is_pinned: true }])
+		} else {
+			const taskToUnpin = pinnedTasks.find((t) => t.id === taskId)
+			if (!taskToUnpin) return
+			setPinnedTasks((prev) => prev.filter((t) => t.id !== taskId))
+			setTasks((prev) => [...prev, { ...taskToUnpin, is_pinned: false }])
+		}
+
+		try {
+			const response = await fetch(buildApiUrl(`/tasks/${taskId}`), {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ is_pinned: isPinning }),
+			})
+			if (!response.ok) {
+				throw new Error("Failed to update pin status")
+			}
+			if (isPinning) {
+				toast("已固定", {
+					description: "任务将持续显示在后续天数",
+					duration: 2000,
+				})
+			} else {
+				toast("已取消固定", {
+					duration: 2000,
+				})
+			}
+		} catch (error) {
+			console.error("Pin update failed", error)
+			if (isPinning) {
+				const taskToPin = tasks.find((t) => t.id === taskId)
+				if (taskToPin) {
+					setPinnedTasks((prev) => prev.filter((t) => t.id !== taskId))
+					setTasks((prev) => [...prev, { ...taskToPin, is_pinned: false }])
+				}
+			} else {
+				const taskToUnpin = pinnedTasks.find((t) => t.id === taskId)
+				if (taskToUnpin) {
+					setTasks((prev) => prev.filter((t) => t.id !== taskId))
+					setPinnedTasks((prev) => [...prev, { ...taskToUnpin, is_pinned: true }])
+				}
+			}
+			toast("操作失败", {
+				description: "请重试",
+				duration: 2000,
+			})
 		}
 	}
 
@@ -339,7 +452,7 @@ export default function Home() {
 			if (record) {
 				setTasks((prev) => [
 					...prev,
-					{ id: record.id, title: record.title, done: record.is_done },
+					{ id: record.id, title: record.title, done: record.is_done, is_pinned: record.is_pinned },
 				])
 			}
 		} catch (error) {
@@ -358,32 +471,54 @@ export default function Home() {
 
 	const handleDeleteTask = async (taskId: string) => {
 		const taskToDelete = tasks.find((t) => t.id === taskId)
-		if (!taskToDelete) return
-
-		const previousTasks = [...tasks]
-
-		setTasks((prev) => prev.filter((task) => task.id !== taskId))
-
-		toast("已删除", {
-			description: taskToDelete.title,
-			duration: 2000,
-		})
-
-		try {
-			const response = await fetch(buildApiUrl(`/tasks/${taskId}`), {
-				method: "DELETE",
-				credentials: "include",
-			})
-			if (!response.ok) {
-				throw new Error("Failed to delete task")
-			}
-		} catch (error) {
-			console.error("Task delete failed", error)
-			setTasks(previousTasks)
-			toast("删除失败", {
-				description: "请重试",
+		const pinnedTaskToDelete = pinnedTasks.find((t) => t.id === taskId)
+		
+		if (taskToDelete) {
+			const previousTasks = [...tasks]
+			setTasks((prev) => prev.filter((task) => task.id !== taskId))
+			toast("已删除", {
+				description: taskToDelete.title,
 				duration: 2000,
 			})
+			try {
+				const response = await fetch(buildApiUrl(`/tasks/${taskId}`), {
+					method: "DELETE",
+					credentials: "include",
+				})
+				if (!response.ok) {
+					throw new Error("Failed to delete task")
+				}
+			} catch (error) {
+				console.error("Task delete failed", error)
+				setTasks(previousTasks)
+				toast("删除失败", {
+					description: "请重试",
+					duration: 2000,
+				})
+			}
+		} else if (pinnedTaskToDelete) {
+			const previousPinnedTasks = [...pinnedTasks]
+			setPinnedTasks((prev) => prev.filter((task) => task.id !== taskId))
+			toast("已删除", {
+				description: pinnedTaskToDelete.title,
+				duration: 2000,
+			})
+			try {
+				const response = await fetch(buildApiUrl(`/tasks/${taskId}`), {
+					method: "DELETE",
+					credentials: "include",
+				})
+				if (!response.ok) {
+					throw new Error("Failed to delete task")
+				}
+			} catch (error) {
+				console.error("Task delete failed", error)
+				setPinnedTasks(previousPinnedTasks)
+				toast("删除失败", {
+					description: "请重试",
+					duration: 2000,
+				})
+			}
 		}
 	}
 
@@ -395,7 +530,9 @@ export default function Home() {
 	const selectedMoodMeta = getMoodMeta(selectedMood)
 	const completedTasks = tasks.filter((task) => task.done).length
 	const totalTasks = tasks.length
-	const taskProgress = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0
+	const totalWithPinned = totalTasks + pinnedTasks.length
+	const completedWithPinned = completedTasks + pinnedTasks.filter((t) => t.done).length
+	const taskProgress = totalWithPinned ? Math.round((completedWithPinned / totalWithPinned) * 100) : 0
 
 	return (
 		<div className="min-h-screen bg-[linear-gradient(180deg,#fafafa_0%,#ffffff_45%,#ffffff_100%)] text-foreground flex justify-center">
@@ -523,7 +660,7 @@ export default function Home() {
 							<p className="text-sm tracking-[0.3em] uppercase text-muted-foreground/80 font-medium">Tasks</p>
 							<div className="flex items-center gap-2">
 								<p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/50">
-									{completedTasks} / {totalTasks} done
+									{completedTasks + pinnedTasks.filter(t => t.done).length} / {totalTasks + pinnedTasks.length} done
 								</p>
 								<div className="h-1.5 w-20 bg-black/[0.04] rounded-full overflow-hidden">
 									<div
@@ -533,27 +670,45 @@ export default function Home() {
 								</div>
 							</div>
 						</div>
-						<div className="bg-white/40 backdrop-blur-md border border-white/50 rounded-3xl px-5 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.012)]">
-							<div className="space-y-2">
+						<div className="rounded-2xl px-4 py-3">
+							<div className="space-y-1.5">
 								{isDayLoading ? (
 									Array.from({ length: 3 }).map((_, index) => (
 										<div
 											key={`task-skeleton-${index}`}
-											className="h-10 w-full rounded-xl bg-white/40 animate-pulse border border-white/50"
+											className="h-9 w-full rounded-lg bg-black/[0.03] animate-pulse"
 										/>
 									))
-								) : tasks.length === 0 ? (
+								) : pinnedTasks.length === 0 && tasks.length === 0 ? (
 									<p className="text-sm text-muted-foreground/60 text-center py-6 font-normal tracking-wide">No tasks yet</p>
 								) : (
-									tasks.map((task) => (
-										<div key={task.id} className="-ml-[40px]">
-											<SwipeableTodoItem
-												task={task}
-												onDelete={handleDeleteTask}
-												onToggle={toggleTask}
-											/>
-										</div>
-									))
+									<>
+										{pinnedTasks.length > 0 && (
+											<div className="mb-2">
+												<p className="text-[10px] tracking-[0.2em] uppercase text-amber-600/70 mb-1.5">Pinned</p>
+												{pinnedTasks.map((task) => (
+													<div key={task.id} className="-ml-[36px]">
+														<SwipeableTodoItem
+															task={task}
+															onDelete={handleDeleteTask}
+															onToggle={toggleTask}
+															onPin={togglePin}
+														/>
+													</div>
+												))}
+											</div>
+										)}
+										{tasks.map((task) => (
+											<div key={task.id} className="-ml-[36px]">
+												<SwipeableTodoItem
+													task={task}
+													onDelete={handleDeleteTask}
+													onToggle={toggleTask}
+													onPin={togglePin}
+												/>
+											</div>
+										))}
+									</>
 								)}
 							</div>
 						</div>

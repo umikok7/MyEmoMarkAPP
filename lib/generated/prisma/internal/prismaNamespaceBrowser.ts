@@ -81,6 +81,7 @@ export const Daily_tasksScalarFieldEnum = {
   title: 'title',
   task_date: 'task_date',
   is_done: 'is_done',
+  is_pinned: 'is_pinned',
   created_at: 'created_at',
   updated_at: 'updated_at',
   deleted_at: 'deleted_at',

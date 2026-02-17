@@ -5,6 +5,7 @@ import { fail, getSessionUserId, ok, parseJson, resolveUserId } from "@/lib/serv
 
 type TaskUpdatePayload = {
   is_done?: boolean
+  is_pinned?: boolean
 }
 
 export async function PATCH(
@@ -16,10 +17,20 @@ export async function PATCH(
   if (!taskId) return fail(400, "Task ID is required")
 
   const body = await parseJson<TaskUpdatePayload>(request)
-  if (!body || typeof body.is_done !== "boolean") return fail(400, "is_done is required")
+  if (!body || (typeof body.is_done !== "boolean" && typeof body.is_pinned !== "boolean")) {
+    return fail(400, "is_done or is_pinned is required")
+  }
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
+
+  const updateData: { is_done?: boolean; is_pinned?: boolean } = {}
+  if (typeof body.is_done === "boolean") {
+    updateData.is_done = body.is_done
+  }
+  if (typeof body.is_pinned === "boolean") {
+    updateData.is_pinned = body.is_pinned
+  }
 
   const record = await prisma.daily_tasks.update({
     where: {
@@ -27,15 +38,14 @@ export async function PATCH(
       user_id: userId,
       is_deleted: false,
     },
-    data: {
-      is_done: body.is_done,
-    },
+    data: updateData,
     select: {
       id: true,
       user_id: true,
       title: true,
       task_date: true,
       is_done: true,
+      is_pinned: true,
       created_at: true,
     },
   })

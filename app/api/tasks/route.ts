@@ -16,6 +16,16 @@ type TaskPayload = {
   task_date?: string
 }
 
+type TaskSelect = {
+  id: true
+  user_id: true
+  title: true
+  task_date: true
+  is_done: true
+  is_pinned: true
+  created_at: true
+}
+
 const parseTaskDate = (value?: string | null) => {
   if (!value) return null
   const parsed = new Date(value)
@@ -28,28 +38,58 @@ export async function GET(request: NextRequest) {
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(query.get("user_id"), sessionUserId)
   const dateParam = parseTaskDate(query.get("date"))
-  if (!dateParam) return fail(400, "date is required")
+  const includePinned = query.get("include_pinned") === "true"
+  
+  if (!dateParam && !includePinned) return fail(400, "date is required")
 
   if (userId === "guest") {
     return ok({ items: [] })
   }
 
-  const tasks = await prisma.daily_tasks.findMany({
-    where: {
-      is_deleted: false,
-      user_id: userId,
-      task_date: new Date(dateParam),
-    },
-    orderBy: { created_at: "asc" },
-    select: {
-      id: true,
-      user_id: true,
-      title: true,
-      task_date: true,
-      is_done: true,
-      created_at: true,
-    },
-  })
+  let tasks: Awaited<ReturnType<typeof prisma.daily_tasks.findMany<{
+    select: TaskSelect
+  }>>> = []
+  
+  if (includePinned) {
+    tasks = await prisma.daily_tasks.findMany({
+      where: {
+        is_deleted: false,
+        user_id: userId,
+        is_pinned: true,
+        is_done: false,
+      },
+      orderBy: { created_at: "asc" },
+      select: {
+        id: true,
+        user_id: true,
+        title: true,
+        task_date: true,
+        is_done: true,
+        is_pinned: true,
+        created_at: true,
+      },
+    })
+  } else if (dateParam) {
+    tasks = await prisma.daily_tasks.findMany({
+      where: {
+        is_deleted: false,
+        user_id: userId,
+        task_date: new Date(dateParam),
+      },
+      orderBy: { created_at: "asc" },
+      select: {
+        id: true,
+        user_id: true,
+        title: true,
+        task_date: true,
+        is_done: true,
+        is_pinned: true,
+        created_at: true,
+      },
+    })
+  } else {
+    tasks = []
+  }
 
   const items = tasks.map((task) => ({
     ...task,
@@ -85,6 +125,7 @@ export async function POST(request: NextRequest) {
       title: true,
       task_date: true,
       is_done: true,
+      is_pinned: true,
       created_at: true,
     },
   })
