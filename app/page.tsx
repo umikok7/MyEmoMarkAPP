@@ -545,12 +545,12 @@ export default function Home() {
 							isSavingComplete && "opacity-60"
 						)}
 					>
-						<div className="flex items-center justify-between text-[11px] tracking-[0.25em] uppercase text-muted-foreground/60">
+						<div className="flex items-center justify-between text-xs font-medium tracking-widest text-stone-500 uppercase">
 							<span>{formatDateLabel(selectedDate)}</span>
 							{isLoggedIn ? (
 								<button
 									onClick={handleLogout}
-									className="hover:text-foreground/70 transition"
+									className="text-xs font-medium tracking-widest text-stone-400 uppercase hover:text-stone-600 transition-colors"
 								>
 									Logout
 								</button>
@@ -559,7 +559,7 @@ export default function Home() {
 									ref={loginButtonRef}
 									id="login-register-button"
 									href="/login"
-									className="hover:text-foreground/70 transition"
+									className="text-xs font-medium tracking-widest text-stone-400 uppercase hover:text-stone-600 transition-colors"
 								>
 									Login
 								</Link>
@@ -633,11 +633,12 @@ export default function Home() {
 					<div className="px-6 py-8 relative flex items-center justify-between">
 						{/* Text Content */}
 						<div className="relative z-10 max-w-[55%]">
-							<p className="text-xs tracking-[0.3em] uppercase text-muted-foreground/70 font-medium mb-2">
-								Today
-							</p>
-							<h2 className="text-xl font-normal text-foreground/90 leading-relaxed tracking-wide">
-								Take a moment to breathe
+						<p className="text-lg font-bold tracking-wide text-stone-800">
+							Today
+							<span className="block mt-1 h-0.5 w-8 bg-stone-400 rounded-full"></span>
+						</p>
+							<h2 className="text-xl font-normal text-foreground/90 leading-relaxed tracking-wide mt-4">
+								Have a nice day~
 							</h2>
 						</div>
 
@@ -657,7 +658,10 @@ export default function Home() {
 				<div className="px-6 pt-6 space-y-6">
 					<section ref={tasksSectionRef} className="space-y-3">
 						<div className="flex items-center justify-between">
-							<p className="text-sm tracking-[0.3em] uppercase text-muted-foreground/80 font-medium">Tasks</p>
+							<p className="text-lg font-bold tracking-wide text-stone-800">
+								Tasks
+								<span className="block mt-1 h-0.5 w-8 bg-stone-400 rounded-full"></span>
+							</p>
 							<div className="flex items-center gap-2">
 								<p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/50">
 									{completedTasks + pinnedTasks.filter(t => t.done).length} / {totalTasks + pinnedTasks.length} done
@@ -716,7 +720,10 @@ export default function Home() {
 
 					<section className="space-y-4">
 						<div className="flex items-center justify-between">
-							<p className="text-sm tracking-[0.3em] uppercase text-muted-foreground/80 font-medium">Mood</p>
+							<p className="text-lg font-bold tracking-wide text-stone-800">
+								Mood
+								<span className="block mt-1 h-0.5 w-8 bg-stone-400 rounded-full"></span>
+							</p>
 							{!loadingSpaces && selectedMood && (
 								<MoodSpaceSelector
 									selectedSpace={selectedSpace}
@@ -765,12 +772,19 @@ export default function Home() {
 						<button
 							onClick={() => setIsNoteOpen((prev) => !prev)}
 							className={cn(
-								"flex w-full items-center justify-between text-sm tracking-[0.3em] uppercase transition-all duration-500 font-medium",
-								isSavingComplete ? "text-muted-foreground/40" : "text-muted-foreground/80"
+								"flex w-full items-center justify-between py-2 transition-all duration-500",
+								isSavingComplete ? "opacity-40" : "opacity-100"
 							)}
 						>
-							<span>Note</span>
-							<span>{isNoteOpen ? "Close" : "Open"}</span>
+							<span className="text-sm font-bold tracking-wide text-stone-700">
+								Note
+							</span>
+							<span className={cn(
+								"text-xs tracking-widest text-stone-400 uppercase transition-all duration-300",
+								isNoteOpen && "rotate-180"
+							)}>
+								{isNoteOpen ? "Close" : "Open"}
+							</span>
 						</button>
 						<div
 							className={cn(
@@ -893,7 +907,7 @@ export default function Home() {
 				</div>
 			)}
 
-			<OnboardingGuide targetRef={loginButtonRef} tasksRef={tasksSectionRef} isLoggedIn={isLoggedIn} />
+			<OnboardingGuide isLoggedIn={isLoggedIn} />
 		</div>
 	)
 }

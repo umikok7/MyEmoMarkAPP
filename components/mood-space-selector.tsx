@@ -39,7 +39,7 @@ export function MoodSpaceSelector({
   return (
     <div
       className={cn(
-        "inline-flex items-center p-1 rounded-full bg-stone-50/80 backdrop-blur-sm border border-stone-100/50",
+        "inline-flex items-center p-0.5 rounded-full bg-stone-50/80 backdrop-blur-sm border border-stone-100/50",
         disabled && "opacity-50"
       )}
     >
@@ -47,7 +47,7 @@ export function MoodSpaceSelector({
         onClick={() => onSpaceChange("personal")}
         disabled={disabled}
         className={cn(
-          "relative z-10 px-4 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all duration-300",
+          "relative z-10 px-3 py-1 rounded-full text-[2px] font-medium tracking-wide transition-all duration-300",
           selectedSpace === "personal"
             ? "text-stone-700"
             : "text-stone-400 hover:text-stone-500",
@@ -55,7 +55,7 @@ export function MoodSpaceSelector({
         )}
       >
         <span className="flex items-center gap-1.5">
-          <User className="w-3 h-3" />
+          <User className="w-0.5 h-0.5" />
           Personal
         </span>
         {selectedSpace === "personal" && (
@@ -67,7 +67,7 @@ export function MoodSpaceSelector({
         onClick={() => onSpaceChange("couple", coupleSpaces[0]?.id)}
         disabled={disabled}
         className={cn(
-          "relative z-10 px-4 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all duration-300",
+          "relative z-10 px-3 py-1 rounded-full text-[2px] font-medium tracking-wide transition-all duration-300",
           selectedSpace === "couple"
             ? "text-stone-700"
             : "text-stone-400 hover:text-stone-500",
@@ -75,7 +75,7 @@ export function MoodSpaceSelector({
         )}
       >
         <span className="flex items-center gap-1.5">
-          <HeartHandshake className="w-3 h-3" />
+          <HeartHandshake className="w-0.5 h-0.5" />
           Our Space
         </span>
         {selectedSpace === "couple" && (

@@ -1,199 +1,304 @@
 "use client"
 
 import * as React from "react"
-import { Button } from "@/components/ui/button"
-import { ArrowUpRight, X } from "lucide-react"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
+import { CloudSun, Leaf, Wind, Droplets, Pin, Trash2, Heart, Sparkles, ChevronRight } from "lucide-react"
 
-const STORAGE_KEY = "awesome-onboarding-complete"
+const STORAGE_KEY = "onboarding-complete"
 
-type Spotlight = {
-  top: number
-  left: number
-  width: number
-  height: number
-  borderRadius: string
+type FeatureItem = {
+  icon: typeof CloudSun
+  label: string
 }
 
-type OnboardingGuideProps = {
-  targetRef: React.RefObject<HTMLElement | null>
-  tasksRef: React.RefObject<HTMLElement | null>
-  isLoggedIn: boolean
+type Slide = {
+  headline: string
+  features?: FeatureItem[]
+  svg?: string
 }
 
-export function OnboardingGuide({ targetRef, tasksRef, isLoggedIn }: OnboardingGuideProps) {
+const slides: Slide[] = [
+  {
+    headline: "随心记",
+    features: [
+      { icon: CloudSun, label: "记录心情" },
+      { icon: Sparkles, label: "觉察当下" },
+      { icon: Heart, label: "拥抱感受" },
+    ],
+    svg: "/undraw_dev-environment_n5by.svg",
+  },
+  {
+    headline: "记录想法与代办",
+    features: [
+      { icon: Pin, label: "置顶任务" },
+      { icon: Trash2, label: "删除待办" },
+      { icon: CloudSun, label: "情绪追踪" },
+    ],
+    svg: "/undraw_idea_hz8b.svg",
+  },
+  {
+    headline: "随时发布",
+    features: [
+      { icon: Leaf, label: "Calm 平静" },
+      { icon: Wind, label: "Worry 忧虑" },
+      { icon: Droplets, label: "Blue 忧郁" },
+    ],
+    svg: "/undraw_publish-post_7g2z.svg",
+  },
+  {
+    headline: "即刻开启",
+    svg: "/undraw_launch-event_aur1.svg",
+  },
+]
+
+export function OnboardingGuide({ isLoggedIn }: { isLoggedIn: boolean }) {
   const [isOpen, setIsOpen] = React.useState(false)
-  const [step, setStep] = React.useState(1)
-  const [spotlight, setSpotlight] = React.useState<Spotlight | null>(null)
+  const [currentIndex, setCurrentIndex] = React.useState(0)
+  const [isExpanded, setIsExpanded] = React.useState(false)
+  const [animKey, setAnimKey] = React.useState(0)
+  const touchStartX = React.useRef<number | null>(null)
+  const touchEndX = React.useRef<number | null>(null)
 
   React.useEffect(() => {
     if (typeof window === "undefined") return
-    const completed = window.localStorage.getItem(STORAGE_KEY)
+    const completed = localStorage.getItem(STORAGE_KEY)
     if (!completed && !isLoggedIn) {
       setIsOpen(true)
-      setStep(1)
     }
   }, [isLoggedIn])
 
-  const closeGuide = React.useCallback(() => {
+  const closeOnboarding = React.useCallback(() => {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, "true")
+      localStorage.setItem(STORAGE_KEY, "true")
     }
     setIsOpen(false)
   }, [])
 
-  const updateSpotlight = React.useCallback(() => {
-    let activeRef: HTMLElement | null = null
-    let padding = 0
-    let radius = "50%"
+  const goToSlide = React.useCallback((index: number) => {
+    if (index < 0 || index >= slides.length) return
+    setIsExpanded(false)
+    setCurrentIndex(index)
+    setAnimKey((prev) => prev + 1)
+  }, [])
 
-    if (step === 2) {
-      activeRef = tasksRef.current
-      padding = 20
-      radius = "2rem" // 32px matches rounded-3xl approx
-    } else if (step === 3) {
-      activeRef = targetRef.current
-      padding = 14
-      radius = "50%"
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const half = rect.width / 2
+
+    if (currentIndex === slides.length - 1) {
+      return
     }
 
-    if (!activeRef) return
-
-    const rect = activeRef.getBoundingClientRect()
-    
-    setSpotlight({
-      top: rect.top - padding,
-      left: rect.left - padding,
-      width: rect.width + padding * 2,
-      height: rect.height + padding * 2,
-      borderRadius: radius,
-    })
-  }, [step, targetRef, tasksRef])
-
-  React.useLayoutEffect(() => {
-    if (!isOpen || step === 1) return
-    updateSpotlight()
-    window.addEventListener("resize", updateSpotlight)
-    window.addEventListener("scroll", updateSpotlight, true)
-    return () => {
-      window.removeEventListener("resize", updateSpotlight)
-      window.removeEventListener("scroll", updateSpotlight, true)
+    if (x > half) {
+      if (!isExpanded && slides[currentIndex].features) {
+        setIsExpanded(true)
+      } else {
+        goToSlide(currentIndex + 1)
+      }
+    } else {
+      if (isExpanded) {
+        setIsExpanded(false)
+      } else if (currentIndex > 0) {
+        goToSlide(currentIndex - 1)
+      }
     }
-  }, [isOpen, step, updateSpotlight])
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return
+    const diff = touchStartX.current - touchEndX.current
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        if (!isExpanded && slides[currentIndex].features) {
+          setIsExpanded(true)
+        } else {
+          goToSlide(currentIndex + 1)
+        }
+      } else {
+        if (isExpanded) {
+          setIsExpanded(false)
+        } else {
+          goToSlide(currentIndex - 1)
+        }
+      }
+    }
+    touchStartX.current = null
+    touchEndX.current = null
+  }
 
   if (!isOpen) return null
 
+  const currentSlide = slides[currentIndex]
+  const showFeatures = currentSlide.features && currentSlide.features.length > 0
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center px-6 py-8",
+        "bg-[#faf9f7]/60 backdrop-blur-md"
+      )}
+      onClick={handleCardClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <style jsx>{`
+        @keyframes pop-in {
+          0% {
+            transform: scale(0.8) translateY(10px);
+            opacity: 0;
+          }
+          100% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+          }
+        }
+        @keyframes pop-out {
+          0% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(0.9) translateY(5px);
+            opacity: 0;
+          }
+        }
+        .feature-pop {
+          animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .feature-pop-out {
+          animation: pop-out 0.2s ease-out forwards;
+        }
+      `}</style>
+
       <div
         className={cn(
-          "absolute inset-0 bg-black/30 backdrop-blur-[1px] transition-opacity duration-500",
-          isOpen ? "opacity-100" : "opacity-0"
+          "relative w-full max-w-[360px] h-[340px]",
+          "bg-gradient-to-br from-white/70 via-white/50 to-white/60",
+          "rounded-[1.5rem]",
+          "border border-white/40",
+          "shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15),0_0_1px_rgba(255,255,255,0.5),inset_0_1px_0_rgba(255,255,255,0.8)]",
+          "backdrop-blur-xl",
+          "px-8 py-8",
+          "select-none",
+          "cursor-pointer",
+          "before:absolute before:inset-0 before:rounded-[1.5rem] before:bg-gradient-to-br before:from-white/20 before:to-transparent before:pointer-events-none"
         )}
-        onClick={closeGuide}
-        aria-hidden
-      />
-
-      {step !== 1 && spotlight ? (
-        <div
-          className="absolute ring-1 ring-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] transition-all duration-500"
-          style={{
-            top: spotlight.top,
-            left: spotlight.left,
-            width: spotlight.width,
-            height: spotlight.height,
-            borderRadius: spotlight.borderRadius,
-          }}
-          aria-hidden
-        />
-      ) : null}
-
-      {step === 3 && spotlight ? (
-        <div
-          className="absolute flex items-center gap-2 text-xs text-white/90"
-          style={{
-            top: Math.max(spotlight.top - 28, 16),
-            left: spotlight.left + spotlight.width - 10,
-          }}
-        >
-          <ArrowUpRight className="h-4 w-4 text-white/80" strokeWidth={1.2} />
-          <span className="tracking-[0.2em] uppercase">Login / Register</span>
-        </div>
-      ) : null}
-
-      <div className="relative w-full max-w-md px-6 pb-12">
-        <div
-          className={cn(
-            "relative w-full rounded-[2.5rem] bg-[#fffdfa] border border-black/[0.04] shadow-[0_25px_60px_-40px_rgba(0,0,0,0.25)] px-8 py-10 transition-all duration-500",
-            step === 1 ? "translate-y-0 opacity-100" : "translate-y-2 opacity-95"
-          )}
-        >
-          <button
-            onClick={closeGuide}
-            className="absolute right-6 top-6 rounded-full p-1 text-muted-foreground/60 transition hover:text-foreground/70"
-            aria-label="Dismiss onboarding"
+      >
+        <div className="text-center" key={animKey}>
+          <h2
+            className={cn(
+              "mt-5 text-[24px] leading-[1.45] font-medium text-[#111111]",
+              "font-serif"
+            )}
+            style={{ fontFamily: "Georgia, serif" }}
           >
-            <X className="h-4 w-4" strokeWidth={1.3} />
-          </button>
+            {currentSlide.headline}
+          </h2>
 
-          {step === 1 && (
-            <div className="space-y-5">
-              <p className="text-[11px] font-semibold tracking-[0.3em] text-muted-foreground/60 uppercase">
-                Welcome
-              </p>
-              <h2 className="text-2xl font-light text-foreground">
-                A gentle space for mood tracking and healing reflection.
-              </h2>
-              <p className="text-sm text-muted-foreground/70 leading-relaxed">
-                Capture your feelings, notice patterns, and give yourself a soft place to breathe.
-              </p>
-              <Button
-                className="w-full rounded-full bg-[#1f1f1f]/90 text-white hover:bg-[#1f1f1f]"
-                onClick={() => setStep(2)}
-              >
-                Continue
-              </Button>
+          {currentIndex === slides.length - 1 ? (
+            <div className="mt-6 flex justify-center">
+              <div className="w-30 h-30 relative bg-white rounded-2xl">
+                <Image
+                  src={currentSlide.svg || ""}
+                  alt="illustration"
+                  fill
+                  className="object-contain p-2"
+                />
+              </div>
+            </div>
+          ) : showFeatures && !isExpanded && (
+            <div className="mt-6 flex justify-center">
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/50 backdrop-blur-sm rounded-full animate-pulse">
+                <div className="w-20 h-20 relative -ml-1">
+                  <Image
+                    src={currentSlide.svg || ""}
+                    alt="tap"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <ChevronRight className="w-5 h-5 text-[#555555] -mr-1" />
+              </div>
             </div>
           )}
 
-          {step === 2 && (
-            <div className="space-y-4">
-              <p className="text-[11px] font-semibold tracking-[0.3em] text-muted-foreground/60 uppercase">
-                New Feature
-              </p>
-              <h2 className="text-2xl font-light text-foreground">
-                Daily Todo List
-              </h2>
-              <p className="text-sm text-muted-foreground/70 leading-relaxed">
-                Stay organized with our new minimalist task manager. Plan your day with calm and clarity.
-              </p>
-              <Button
-                className="w-full rounded-full bg-[#1f1f1f]/90 text-white hover:bg-[#1f1f1f]"
-                onClick={() => setStep(3)}
-              >
-                Next
-              </Button>
+          {showFeatures && isExpanded && (
+            <div
+              className={cn(
+                "flex flex-wrap justify-center gap-3 mt-6"
+              )}
+            >
+              {currentSlide.features?.map((feature, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    "flex items-center gap-2",
+                    "px-3 py-2",
+                    "bg-white/60 backdrop-blur-sm",
+                    "rounded-full",
+                    "border border-white/50",
+                    "shadow-sm",
+                    isExpanded ? "feature-pop" : "feature-pop-out"
+                  )}
+                  style={{ animationDelay: `${idx * 80}ms` }}
+                >
+                  <feature.icon className="w-4 h-4 text-[#555555]" strokeWidth={1.5} />
+                  <span className="text-[11px] font-medium text-[#555555]">
+                    {feature.label}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
+        </div>
 
-          {step === 3 && (
-            <div className="space-y-4">
-              <p className="text-[11px] font-semibold tracking-[0.3em] text-muted-foreground/60 uppercase">
-                Final Step
-              </p>
-              <h2 className="text-2xl font-light text-foreground">
-                Tap the top-right button to log in or create your journal.
-              </h2>
-              <p className="text-sm text-muted-foreground/70 leading-relaxed">
-                Your entries stay with you across devices once you sign in.
-              </p>
-              <Button
-                className="w-full rounded-full bg-[#1f1f1f]/90 text-white hover:bg-[#1f1f1f]"
-                onClick={closeGuide}
-              >
-                Got it
-              </Button>
-            </div>
+        <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-4">
+          <div className="flex gap-2">
+            {slides.map((_, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "h-[2.5px] rounded-full transition-all duration-500",
+                  index === currentIndex
+                    ? "w-5 bg-[#000000]"
+                    : "w-2.5 bg-[#bbbbbb]"
+                )}
+              />
+            ))}
+          </div>
+
+          {currentIndex === slides.length - 1 ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                closeOnboarding()
+              }}
+              className={cn(
+                "px-8 py-2.5",
+                "bg-[#000000] text-white",
+                "text-[12px] font-bold tracking-[0.1em]",
+                "rounded-full",
+                "transition-all duration-300",
+                "hover:bg-[#000000]"
+              )}
+            >
+              进入
+            </button>
+          ) : (
+            <p className="text-[10px] font-medium tracking-[0.2em] text-[#888888]">
+              {isExpanded ? "点击右侧继续" : "点击探索更多"}
+            </p>
           )}
         </div>
       </div>
