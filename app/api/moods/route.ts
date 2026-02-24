@@ -24,11 +24,50 @@ export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams
   const limit = Math.max(0, Number(query.get("limit")) || 50)
   const offset = Math.max(0, Number(query.get("offset")) || 0)
+  const spaceId = query.get("space_id")
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(query.get("user_id"), sessionUserId)
 
   if (userId === "guest") {
     return ok({ items: [] })
+  }
+
+  // When space_id is provided: fetch both partners' personal mood_records merged
+  if (spaceId) {
+    const space = await prisma.couple_spaces.findFirst({
+      where: {
+        id: spaceId,
+        is_deleted: false,
+        status: "accepted",
+        OR: [{ user_id_1: userId }, { user_id_2: userId }],
+      },
+    })
+    if (!space) return fail(404, "Space not found or not accessible")
+
+    const partnerIds = [space.user_id_1, space.user_id_2]
+
+    const records = await prisma.mood_records.findMany({
+      where: {
+        is_deleted: false,
+        user_id: { in: partnerIds },
+      },
+      orderBy: { created_at: "desc" },
+      take: limit,
+      skip: offset,
+    })
+
+    const items = records.map((row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      created_by_user_id: row.user_id,
+      mood_type: row.mood_type,
+      intensity: row.intensity,
+      note: row.note ? decrypt(row.note) : "",
+      tags: row.tags ? (Array.isArray(row.tags) ? row.tags : []) : [],
+      created_at: row.created_at,
+    }))
+
+    return ok({ items })
   }
 
   const records = await prisma.mood_records.findMany({

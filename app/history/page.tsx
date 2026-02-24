@@ -34,6 +34,8 @@ interface JournalEntry {
 
 type ServerMoodItem = {
   id: string
+  user_id?: string
+  created_by_user_id?: string
   mood_type: MoodType
   intensity: number
   note?: string
@@ -97,6 +99,22 @@ export default function HistoryPage() {
         tags: coupleItem.tags || [],
         author_id: coupleItem.created_by_user_id,
         is_mine: isMine,
+      }
+    }
+
+    // Personal mode with couple space: server returns created_by_user_id for both partners
+    const serverItem = item as ServerMoodItem
+    if (serverItem.created_by_user_id) {
+      return {
+        id: serverItem.id,
+        date: item.created_at,
+        time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        mood: item.mood_type as MoodType,
+        intensity: item.intensity,
+        note: item.note ?? "",
+        tags: item.tags || [],
+        author_id: serverItem.created_by_user_id,
+        is_mine: serverItem.created_by_user_id === userId,
       }
     }
 
@@ -206,6 +224,7 @@ export default function HistoryPage() {
           limit: PAGE_LIMIT,
           offset: offsetValue,
           user_id: userId,
+          ...(selectedCoupleSpaceId ? { space_id: selectedCoupleSpaceId } : {}),
         })
       } else if (selectedCoupleSpaceId) {
         url = buildApiUrl("/couple-moods", {
@@ -291,6 +310,8 @@ export default function HistoryPage() {
     return groups
   }, [data])
 
+  const isChatLayout = currentSpace === "personal" && selectedCoupleSpaceId !== null
+
   return (
     <div className="min-h-screen bg-background p-6 md:p-12 pb-32 flex justify-center">
       <main className="w-full max-w-md">
@@ -371,29 +392,40 @@ export default function HistoryPage() {
         /* Timeline Feed */
         <div className="space-y-10 relative">
           
-          {/* Vertical Line Decoration */}
-          <div className="absolute left-[19px] top-2 bottom-0 w-[1px] bg-gradient-to-b from-muted-foreground/20 via-muted-foreground/10 to-transparent z-0" />
+          {/* Vertical Line Decoration — hidden in chat layout */}
+          {!isChatLayout && (
+            <div className="absolute left-[19px] top-2 bottom-0 w-[1px] bg-gradient-to-b from-muted-foreground/20 via-muted-foreground/10 to-transparent z-0" />
+          )}
 
           {Object.entries(groupedEntries).map(([dateLabel, entries]) => (
             <div key={dateLabel} className="relative z-10 group">
               
               {/* Date Header */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center shadow-sm z-10">
-                   <Calendar className="w-4 h-4 text-muted-foreground/70" />
+              {isChatLayout ? (
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex-1 h-px bg-muted/50" />
+                  <span className="text-[11px] font-medium text-muted-foreground/50 tracking-widest uppercase px-2">{dateLabel}</span>
+                  <div className="flex-1 h-px bg-muted/50" />
                 </div>
-                <div className="text-sm font-medium text-muted-foreground/80 tracking-widest uppercase">
-                  {dateLabel}
+              ) : (
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center shadow-sm z-10">
+                     <Calendar className="w-4 h-4 text-muted-foreground/70" />
+                  </div>
+                  <div className="text-sm font-medium text-muted-foreground/80 tracking-widest uppercase">
+                    {dateLabel}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Entries */}
-              <div className="space-y-4 pl-14">
+              <div className={cn(!isChatLayout ? "space-y-3 pl-14" : "")}>
                 {entries.map((entry) => (
                     <TimelineCard
                       key={entry.id}
                       entry={entry}
                       showAuthor={currentSpace === "couple"}
+                      chatLayout={isChatLayout}
                       currentSpace={currentSpace}
                       onUpdated={(record) => {
                         if (!record) return
@@ -448,12 +480,14 @@ function TimelineCard({
   onUpdated,
   onDeleted,
   showAuthor,
+  chatLayout,
   currentSpace,
 }: {
   entry: JournalEntry
   onUpdated?: (record: ServerMoodItem) => void
   onDeleted?: (deletedId: string) => void
   showAuthor?: boolean
+  chatLayout?: boolean
   currentSpace?: "personal" | "couple"
 }) {
   const [isExpanded, setIsExpanded] = React.useState(false)
@@ -483,47 +517,83 @@ function TimelineCard({
     setIsEditing(false)
   }
 
-  return (
+  // In chat layout, partner's cards are read-only
+  const isPartnerCard = chatLayout && entry.is_mine === false
+
+  const card = (
     <Card 
       onClick={() => {
         if (isEditing) return
         setIsExpanded(!isExpanded)
       }}
       className={cn(
-        "border-none shadow-sm transition-all duration-500 cursor-pointer overflow-hidden",
-        isExpanded ? "bg-white shadow-md ring-1 ring-black/5" : "bg-white/60 hover:bg-white/80"
+        "border-none transition-all duration-500 cursor-pointer overflow-hidden",
+        isExpanded ? "bg-white shadow-md ring-1 ring-black/5" : "bg-white/60 hover:bg-white/80 shadow-sm",
+        // Faint rose tint for partner card
+        chatLayout && isPartnerCard && "bg-rose-50/30 hover:bg-rose-50/50"
       )}
     >
-      <div className="p-5 flex gap-4 items-start">
+      <div className={cn(
+        "p-5 flex gap-4 items-start",
+        // Mirror layout for partner cards — icon moves to right side
+        chatLayout && isPartnerCard && "flex-row-reverse"
+      )}>
         {/* Thumbnail / Icon Area */}
         <div className={cn(
-          "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors duration-300",
-          config.bg
+          "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-colors duration-300",
+          config.bg,
+          chatLayout && isPartnerCard && "opacity-80"
         )}>
-          <Icon className={cn("w-6 h-6", config.color)} strokeWidth={1.5} />
+          <Icon className={cn("w-5 h-5", config.color)} strokeWidth={1.5} />
         </div>
 
         {/* Content Preview */}
-        <div className="flex-1 min-w-0 pt-1">
-          <div className="flex justify-between items-center mb-1">
-             <h3 className="text-base font-medium text-foreground/90">{config.label}</h3>
-             <div className="flex items-center gap-2">
-               <span className="text-xs font-mono text-muted-foreground/60">{entry.time}</span>
-               {showAuthor && entry.is_mine !== undefined && (
-                 <AuthorBadge isMine={entry.is_mine} />
-               )}
-             </div>
-          </div>
+        <div className={cn(
+          "flex-1 min-w-0 pt-0.5",
+          chatLayout && isPartnerCard && "items-end"
+        )}>
+          {/* Chat layout: AuthorBadge + time on its own row */}
+          {chatLayout && entry.is_mine !== undefined ? (
+            <div className={cn(
+              "flex items-center gap-2 mb-1.5",
+              isPartnerCard ? "flex-row-reverse" : "flex-row"
+            )}>
+              <AuthorBadge isMine={entry.is_mine} />
+              <span className="text-[11px] font-mono text-muted-foreground/45">{entry.time}</span>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center mb-1">
+              <h3 className="text-base font-medium text-foreground/90">{config.label}</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-muted-foreground/60">{entry.time}</span>
+                {showAuthor && entry.is_mine !== undefined && (
+                  <AuthorBadge isMine={entry.is_mine} />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Mood label row (chat layout only) */}
+          {chatLayout && (
+            <h3 className={cn(
+              "text-sm font-medium mb-1",
+              isPartnerCard ? "text-rose-400/90 text-right" : "text-foreground/80"
+            )}>{config.label}</h3>
+          )}
           
           <p className={cn(
             "text-sm text-muted-foreground/80 leading-relaxed transition-all duration-500",
-             isExpanded ? "line-clamp-none" : "line-clamp-2"
+             isExpanded ? "line-clamp-none" : "line-clamp-2",
+             chatLayout && isPartnerCard && "text-right"
           )}>
             {entry.note}
           </p>
 
           {!isExpanded && (
-             <div className="mt-3 flex gap-2">
+             <div className={cn(
+               "mt-2.5 flex gap-2",
+               chatLayout && isPartnerCard ? "justify-end" : "justify-start"
+             )}>
                 <span className="text-[10px] px-2 py-1 rounded-full bg-secondary/30 text-secondary-foreground">
                    {entry.intensity}% Intensity
                 </span>
@@ -572,23 +642,27 @@ function TimelineCard({
                "transition-all duration-500",
                isExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
              )}>
-               <button
-                 type="button"
-                 className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
-                 onClick={handleStartEdit}
-               >
-                 Edit entry
-               </button>
-               <button
-                 type="button"
-                 className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
-                 onClick={(event) => {
-                   event.stopPropagation()
-                   setIsDeleteOpen(true)
-                 }}
-               >
-                 Delete entry
-               </button>
+               {!isPartnerCard && (
+                 <button
+                   type="button"
+                   className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                   onClick={handleStartEdit}
+                 >
+                   Edit entry
+                 </button>
+               )}
+               {!isPartnerCard && (
+                 <button
+                   type="button"
+                   className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                   onClick={(event) => {
+                     event.stopPropagation()
+                     setIsDeleteOpen(true)
+                   }}
+                 >
+                   Delete entry
+                 </button>
+               )}
              </div>
            </div>
           </div>
@@ -800,4 +874,48 @@ function TimelineCard({
       )}
     </Card>
   )
+
+  if (chatLayout) {
+    return (
+      // 3-column flex: [left track] [card content] [right track]
+      // Track columns are full-height in-flow divs — lines stack naturally with no absolute positioning
+      <div className="flex items-stretch">
+
+        {/* Left track column — stone, used by my entries */}
+        <div className="w-6 shrink-0 flex flex-col items-center relative">
+          {/* Continuous vertical line */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-stone-200/70" />
+          {/* Node dot — only for my cards */}
+          {!isPartnerCard && (
+            <div className="relative z-10 mt-[20px] w-2 h-2 rounded-full bg-stone-300/90 ring-2 ring-white shrink-0" />
+          )}
+        </div>
+
+        {/* Card area — py provides vertical rhythm, the track columns fill that height too */}
+        <div className="flex-1 min-w-0 py-1.5">
+          <div className={cn("flex", isPartnerCard ? "justify-end" : "justify-start")}>
+            {/* Horizontal connector pip */}
+            <div className={cn(
+              "self-start mt-[22px] h-px w-3 shrink-0",
+              isPartnerCard ? "order-last bg-rose-200" : "order-first bg-stone-200"
+            )} />
+            <div className="min-w-0 max-w-[calc(100%-12px)]">
+              {card}
+            </div>
+          </div>
+        </div>
+
+        {/* Right track column — rose, used by partner entries */}
+        <div className="w-6 shrink-0 flex flex-col items-center relative">
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-rose-200/60" />
+          {isPartnerCard && (
+            <div className="relative z-10 mt-[20px] w-2 h-2 rounded-full bg-rose-300/80 ring-2 ring-white shrink-0" />
+          )}
+        </div>
+
+      </div>
+    )
+  }
+
+  return card
 }
