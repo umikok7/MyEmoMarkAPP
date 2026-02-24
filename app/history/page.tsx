@@ -403,16 +403,16 @@ export default function HistoryPage() {
               {/* Date Header */}
               {isChatLayout ? (
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="flex-1 h-px bg-muted/50" />
-                  <span className="text-[11px] font-medium text-muted-foreground/50 tracking-widest uppercase px-2">{dateLabel}</span>
-                  <div className="flex-1 h-px bg-muted/50" />
+                  <div className="flex-1 h-px bg-muted/60" />
+                  <span className="text-xs font-semibold text-muted-foreground/65 tracking-widest uppercase px-2">{dateLabel}</span>
+                  <div className="flex-1 h-px bg-muted/60" />
                 </div>
               ) : (
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center shadow-sm z-10">
                      <Calendar className="w-4 h-4 text-muted-foreground/70" />
                   </div>
-                  <div className="text-sm font-medium text-muted-foreground/80 tracking-widest uppercase">
+                  <div className="text-base font-bold text-foreground/75 tracking-widest uppercase">
                     {dateLabel}
                   </div>
                 </div>
@@ -559,13 +559,13 @@ function TimelineCard({
               isPartnerCard ? "flex-row-reverse" : "flex-row"
             )}>
               <AuthorBadge isMine={entry.is_mine} />
-              <span className="text-[11px] font-mono text-muted-foreground/45">{entry.time}</span>
+              <span className={cn("font-mono", chatLayout ? "text-sm font-semibold text-muted-foreground/60" : "text-[11px] text-muted-foreground/45")}>{entry.time}</span>
             </div>
           ) : (
             <div className="flex justify-between items-center mb-1">
-              <h3 className="text-base font-medium text-foreground/90">{config.label}</h3>
+              <h3 className={cn("text-base font-bold tracking-wide", config.color)}>{config.label}</h3>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-muted-foreground/60">{entry.time}</span>
+                <span className="text-sm font-semibold font-mono text-muted-foreground/65">{entry.time}</span>
                 {showAuthor && entry.is_mine !== undefined && (
                   <AuthorBadge isMine={entry.is_mine} />
                 )}
@@ -576,13 +576,15 @@ function TimelineCard({
           {/* Mood label row (chat layout only) */}
           {chatLayout && (
             <h3 className={cn(
-              "text-sm font-medium mb-1",
-              isPartnerCard ? "text-rose-400/90 text-right" : "text-foreground/80"
+              "font-bold tracking-wide mb-1.5 text-lg",
+              isPartnerCard ? "text-right" : "",
+              config.color
             )}>{config.label}</h3>
           )}
           
           <p className={cn(
-            "text-sm text-muted-foreground/80 leading-relaxed transition-all duration-500",
+            "leading-relaxed transition-all duration-500 font-normal",
+            chatLayout ? "text-[15px] text-foreground/55" : "text-sm text-muted-foreground/70",
              isExpanded ? "line-clamp-none" : "line-clamp-2",
              chatLayout && isPartnerCard && "text-right"
           )}>
@@ -594,7 +596,10 @@ function TimelineCard({
                "mt-2.5 flex gap-2",
                chatLayout && isPartnerCard ? "justify-end" : "justify-start"
              )}>
-                <span className="text-[10px] px-2 py-1 rounded-full bg-secondary/30 text-secondary-foreground">
+                <span className={cn(
+                  "px-2.5 py-1 rounded-full bg-secondary/30 text-secondary-foreground",
+                  chatLayout ? "text-xs font-semibold" : "text-[10px]"
+                )}>
                    {entry.intensity}% Intensity
                 </span>
              </div>
@@ -614,7 +619,10 @@ function TimelineCard({
           )}>
            {/* Intensity Bar */}
            <div>
-              <div className="flex justify-between text-xs text-muted-foreground mb-2 px-1">
+              <div className={cn(
+                "flex justify-between text-muted-foreground mb-2 px-1",
+                chatLayout ? "text-sm font-semibold" : "text-xs"
+              )}>
                 <span>Intensity</span>
                 <span>{entry.intensity}%</span>
               </div>
@@ -629,7 +637,10 @@ function TimelineCard({
            {/* Tags */}
            <div className="flex flex-wrap gap-2 pt-1">
              {entry.tags.map(tag => (
-               <span key={tag} className="text-xs px-3 py-1.5 rounded-full bg-muted/50 text-muted-foreground/70">
+               <span key={tag} className={cn(
+                 "px-3 py-1.5 rounded-full bg-muted/50 text-muted-foreground/70",
+                 chatLayout ? "text-sm font-medium" : "text-xs"
+               )}>
                  #{tag}
                </span>
              ))}
@@ -638,7 +649,8 @@ function TimelineCard({
            <div className="pt-2">
              <div className="h-px w-full bg-muted/60" />
              <div className={cn(
-               "mt-3 flex items-center justify-between text-xs tracking-wide",
+               "mt-3 flex items-center justify-between tracking-wide",
+               chatLayout ? "text-sm font-medium" : "text-xs",
                "transition-all duration-500",
                isExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
              )}>
