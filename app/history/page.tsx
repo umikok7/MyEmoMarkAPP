@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CloudSun, Leaf, Wind, Droplets, Zap, Calendar, ArrowLeft } from "lucide-react"
+import { CloudSun, Leaf, Wind, Droplets, Zap, Calendar, ArrowLeft, Heart } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { buildApiUrl } from "@/lib/api"
@@ -30,6 +30,7 @@ interface JournalEntry {
   tags: string[]
   author_id?: string
   is_mine?: boolean
+  liked_by_user_id?: string | null
 }
 
 type ServerMoodItem = {
@@ -41,6 +42,7 @@ type ServerMoodItem = {
   note?: string
   tags?: string[]
   created_at: string
+  liked_by_user_id?: string | null
 }
 
 type CoupleMoodItem = {
@@ -52,6 +54,7 @@ type CoupleMoodItem = {
   note?: string
   tags?: string[]
   created_at: string
+  liked_by_user_id?: string | null
 }
 
 // Mood Config Map
@@ -85,6 +88,7 @@ export default function HistoryPage() {
   // Fetch data
   const mapItem = React.useCallback((item: ServerMoodItem | CoupleMoodItem): JournalEntry => {
     const dateObj = new Date(item.created_at)
+    const likedBy = (item as ServerMoodItem).liked_by_user_id ?? (item as CoupleMoodItem).liked_by_user_id
 
     if (currentSpace === "couple") {
       const coupleItem = item as CoupleMoodItem
@@ -99,6 +103,7 @@ export default function HistoryPage() {
         tags: coupleItem.tags || [],
         author_id: coupleItem.created_by_user_id,
         is_mine: isMine,
+        liked_by_user_id: likedBy,
       }
     }
 
@@ -115,6 +120,7 @@ export default function HistoryPage() {
         tags: item.tags || [],
         author_id: serverItem.created_by_user_id,
         is_mine: serverItem.created_by_user_id === userId,
+        liked_by_user_id: likedBy,
       }
     }
 
@@ -126,6 +132,7 @@ export default function HistoryPage() {
       intensity: item.intensity,
       note: item.note ?? "",
       tags: item.tags || [],
+      liked_by_user_id: likedBy,
     }
   }, [currentSpace, userId])
 
@@ -498,6 +505,8 @@ function TimelineCard({
   const [editIntensity, setEditIntensity] = React.useState(entry.intensity)
   const [isSaving, setIsSaving] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const [isLiked, setIsLiked] = React.useState(!!entry.liked_by_user_id)
+  const [isLikeAnimating, setIsLikeAnimating] = React.useState(false)
   const config = MOOD_CONFIG[entry.mood]
   const Icon = config.icon
 
@@ -519,6 +528,52 @@ function TimelineCard({
 
   // In chat layout, partner's cards are read-only
   const isPartnerCard = chatLayout && entry.is_mine === false
+
+  // Can like this card if it's not my own card (partner's card)
+  const canLike = entry.is_mine === false
+
+  const handleLike = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    
+    if (!canLike) return
+
+    if (navigator.vibrate) {
+      navigator.vibrate(8)
+    }
+
+    const newLikedState = !isLiked
+    setIsLikeAnimating(true)
+    setIsLiked(newLikedState)
+    
+    setTimeout(() => {
+      setIsLikeAnimating(false)
+    }, 300)
+
+    const apiEndpoint = currentSpace === "couple"
+      ? buildApiUrl(`/couple-moods/${entry.id}/like`)
+      : buildApiUrl(`/moods/${entry.id}/like`)
+
+    const method = newLikedState ? "POST" : "DELETE"
+
+    fetch(apiEndpoint, {
+      method,
+      credentials: "include",
+    })
+      .then((res) => {
+        if (!res.ok) {
+          setIsLiked(!newLikedState)
+          throw new Error("Failed to update like")
+        }
+      })
+      .catch((error) => {
+        console.error("Like error:", error)
+        setIsLiked(!newLikedState)
+        toast("Could not update", {
+          description: "Please try again.",
+          duration: 2000,
+        })
+      })
+  }, [canLike, isLiked, currentSpace, entry.id])
 
   const card = (
     <Card 
@@ -560,12 +615,22 @@ function TimelineCard({
             )}>
               <AuthorBadge isMine={entry.is_mine} />
               <span className={cn("font-mono", chatLayout ? "text-sm font-semibold text-muted-foreground/60" : "text-[11px] text-muted-foreground/45")}>{entry.time}</span>
+              {isLiked && (
+                <span className="flex items-center" title="Seen by partner">
+                  <Heart className="w-3.5 h-3.5 text-rose-400/60 fill-rose-400/15" />
+                </span>
+              )}
             </div>
           ) : (
             <div className="flex justify-between items-center mb-1">
               <h3 className={cn("text-base font-bold tracking-wide", config.color)}>{config.label}</h3>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold font-mono text-muted-foreground/65">{entry.time}</span>
+                {isLiked && (
+                  <span className="flex items-center" title="Seen by partner">
+                    <Heart className="w-3.5 h-3.5 text-rose-400/60 fill-rose-400/15" />
+                  </span>
+                )}
                 {showAuthor && entry.is_mine !== undefined && (
                   <AuthorBadge isMine={entry.is_mine} />
                 )}
@@ -592,18 +657,18 @@ function TimelineCard({
           </p>
 
           {!isExpanded && (
-             <div className={cn(
-               "mt-2.5 flex gap-2",
-               chatLayout && isPartnerCard ? "justify-end" : "justify-start"
-             )}>
-                <span className={cn(
-                  "px-2.5 py-1 rounded-full bg-secondary/30 text-secondary-foreground",
-                  chatLayout ? "text-xs font-semibold" : "text-[10px]"
-                )}>
-                   {entry.intensity}% Intensity
-                </span>
-             </div>
-          )}
+              <div className={cn(
+                "mt-2.5 flex gap-2 items-center",
+                chatLayout && isPartnerCard ? "justify-end" : "justify-start"
+              )}>
+                 <span className={cn(
+                   "px-2.5 py-1 rounded-full bg-secondary/30 text-secondary-foreground",
+                   chatLayout ? "text-xs font-semibold" : "text-[10px]"
+                 )}>
+                    {entry.intensity}% Intensity
+                 </span>
+              </div>
+           )}
         </div>
       </div>
 
@@ -647,36 +712,62 @@ function TimelineCard({
            </div>
 
            <div className="pt-2">
-             <div className="h-px w-full bg-muted/60" />
-             <div className={cn(
-               "mt-3 flex items-center justify-between tracking-wide",
-               chatLayout ? "text-sm font-medium" : "text-xs",
-               "transition-all duration-500",
-               isExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
-             )}>
-               {!isPartnerCard && (
-                 <button
-                   type="button"
-                   className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
-                   onClick={handleStartEdit}
-                 >
-                   Edit entry
-                 </button>
-               )}
-               {!isPartnerCard && (
-                 <button
-                   type="button"
-                   className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
-                   onClick={(event) => {
-                     event.stopPropagation()
-                     setIsDeleteOpen(true)
-                   }}
-                 >
-                   Delete entry
-                 </button>
-               )}
-             </div>
-           </div>
+              <div className="h-px w-full bg-muted/60" />
+              <div className={cn(
+                "mt-3 flex items-center justify-between tracking-wide",
+                chatLayout ? "text-sm font-medium" : "text-xs",
+                "transition-all duration-500",
+                isExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+              )}>
+                {canLike && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-1.5 min-h-[44px] min-w-[44px] px-3 rounded-full",
+                      "transition-all duration-300 active:scale-[0.95]",
+                      isLiked 
+                        ? "text-rose-400/80" 
+                        : "text-muted-foreground/50 hover:text-rose-300/70"
+                    )}
+                    onClick={handleLike}
+                  >
+                    <Heart 
+                      className={cn(
+                        "w-4 h-4 transition-all duration-300",
+                        isLikeAnimating && "scale-125",
+                        isLiked && "fill-rose-400/30"
+                      )} 
+                      strokeWidth={isLiked ? 1.5 : 1.8}
+                    />
+                  </button>
+                </div>
+                )}
+                <div className="flex items-center gap-4">
+                {!isPartnerCard && (
+                  <button
+                    type="button"
+                    className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                    onClick={handleStartEdit}
+                  >
+                    Edit entry
+                  </button>
+                )}
+                {!isPartnerCard && (
+                  <button
+                    type="button"
+                    className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98]"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setIsDeleteOpen(true)
+                    }}
+                  >
+                    Delete entry
+                  </button>
+                )}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className={cn(

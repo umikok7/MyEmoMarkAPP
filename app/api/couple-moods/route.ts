@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
     note: row.note ? decrypt(row.note) : "",
     tags: row.tags ? (Array.isArray(row.tags) ? row.tags : []) : [],
     created_at: row.created_at,
+    liked_by_user_id: row.liked_by_user_id,
   }))
 
   return ok({ items })

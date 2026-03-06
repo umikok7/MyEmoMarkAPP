@@ -41,6 +41,7 @@ export type Couple_mood_recordsMinAggregateOutputType = {
   mood_type: string | null
   intensity: number | null
   note: string | null
+  liked_by_user_id: string | null
   created_at: Date | null
   updated_at: Date | null
   deleted_at: Date | null
@@ -54,6 +55,7 @@ export type Couple_mood_recordsMaxAggregateOutputType = {
   mood_type: string | null
   intensity: number | null
   note: string | null
+  liked_by_user_id: string | null
   created_at: Date | null
   updated_at: Date | null
   deleted_at: Date | null
@@ -68,6 +70,7 @@ export type Couple_mood_recordsCountAggregateOutputType = {
   intensity: number
   note: number
   tags: number
+  liked_by_user_id: number
   created_at: number
   updated_at: number
   deleted_at: number
@@ -91,6 +94,7 @@ export type Couple_mood_recordsMinAggregateInputType = {
   mood_type?: true
   intensity?: true
   note?: true
+  liked_by_user_id?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -104,6 +108,7 @@ export type Couple_mood_recordsMaxAggregateInputType = {
   mood_type?: true
   intensity?: true
   note?: true
+  liked_by_user_id?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -118,6 +123,7 @@ export type Couple_mood_recordsCountAggregateInputType = {
   intensity?: true
   note?: true
   tags?: true
+  liked_by_user_id?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -219,6 +225,7 @@ export type Couple_mood_recordsGroupByOutputType = {
   intensity: number
   note: string | null
   tags: runtime.JsonValue | null
+  liked_by_user_id: string | null
   created_at: Date
   updated_at: Date
   deleted_at: Date | null
@@ -256,6 +263,7 @@ export type couple_mood_recordsWhereInput = {
   intensity?: Prisma.IntFilter<"couple_mood_records"> | number
   note?: Prisma.StringNullableFilter<"couple_mood_records"> | string | null
   tags?: Prisma.JsonNullableFilter<"couple_mood_records">
+  liked_by_user_id?: Prisma.UuidNullableFilter<"couple_mood_records"> | string | null
   created_at?: Prisma.DateTimeFilter<"couple_mood_records"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"couple_mood_records"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"couple_mood_records"> | Date | string | null
@@ -271,6 +279,7 @@ export type couple_mood_recordsOrderByWithRelationInput = {
   intensity?: Prisma.SortOrder
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   tags?: Prisma.SortOrderInput | Prisma.SortOrder
+  liked_by_user_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -289,6 +298,7 @@ export type couple_mood_recordsWhereUniqueInput = Prisma.AtLeast<{
   intensity?: Prisma.IntFilter<"couple_mood_records"> | number
   note?: Prisma.StringNullableFilter<"couple_mood_records"> | string | null
   tags?: Prisma.JsonNullableFilter<"couple_mood_records">
+  liked_by_user_id?: Prisma.UuidNullableFilter<"couple_mood_records"> | string | null
   created_at?: Prisma.DateTimeFilter<"couple_mood_records"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"couple_mood_records"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"couple_mood_records"> | Date | string | null
@@ -304,6 +314,7 @@ export type couple_mood_recordsOrderByWithAggregationInput = {
   intensity?: Prisma.SortOrder
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   tags?: Prisma.SortOrderInput | Prisma.SortOrder
+  liked_by_user_id?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -326,6 +337,7 @@ export type couple_mood_recordsScalarWhereWithAggregatesInput = {
   intensity?: Prisma.IntWithAggregatesFilter<"couple_mood_records"> | number
   note?: Prisma.StringNullableWithAggregatesFilter<"couple_mood_records"> | string | null
   tags?: Prisma.JsonNullableWithAggregatesFilter<"couple_mood_records">
+  liked_by_user_id?: Prisma.UuidNullableWithAggregatesFilter<"couple_mood_records"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"couple_mood_records"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"couple_mood_records"> | Date | string
   deleted_at?: Prisma.DateTimeNullableWithAggregatesFilter<"couple_mood_records"> | Date | string | null
@@ -339,6 +351,7 @@ export type couple_mood_recordsCreateInput = {
   intensity?: number
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -354,6 +367,7 @@ export type couple_mood_recordsUncheckedCreateInput = {
   intensity?: number
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -367,6 +381,7 @@ export type couple_mood_recordsUpdateInput = {
   intensity?: Prisma.IntFieldUpdateOperationsInput | number
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -382,6 +397,7 @@ export type couple_mood_recordsUncheckedUpdateInput = {
   intensity?: Prisma.IntFieldUpdateOperationsInput | number
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -396,6 +412,7 @@ export type couple_mood_recordsCreateManyInput = {
   intensity?: number
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -409,6 +426,7 @@ export type couple_mood_recordsUpdateManyMutationInput = {
   intensity?: Prisma.IntFieldUpdateOperationsInput | number
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -423,6 +441,7 @@ export type couple_mood_recordsUncheckedUpdateManyInput = {
   intensity?: Prisma.IntFieldUpdateOperationsInput | number
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -447,6 +466,7 @@ export type couple_mood_recordsCountOrderByAggregateInput = {
   intensity?: Prisma.SortOrder
   note?: Prisma.SortOrder
   tags?: Prisma.SortOrder
+  liked_by_user_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -464,6 +484,7 @@ export type couple_mood_recordsMaxOrderByAggregateInput = {
   mood_type?: Prisma.SortOrder
   intensity?: Prisma.SortOrder
   note?: Prisma.SortOrder
+  liked_by_user_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -477,6 +498,7 @@ export type couple_mood_recordsMinOrderByAggregateInput = {
   mood_type?: Prisma.SortOrder
   intensity?: Prisma.SortOrder
   note?: Prisma.SortOrder
+  liked_by_user_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -536,6 +558,7 @@ export type couple_mood_recordsCreateWithoutCouple_spacesInput = {
   intensity?: number
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -549,6 +572,7 @@ export type couple_mood_recordsUncheckedCreateWithoutCouple_spacesInput = {
   intensity?: number
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -592,6 +616,7 @@ export type couple_mood_recordsScalarWhereInput = {
   intensity?: Prisma.IntFilter<"couple_mood_records"> | number
   note?: Prisma.StringNullableFilter<"couple_mood_records"> | string | null
   tags?: Prisma.JsonNullableFilter<"couple_mood_records">
+  liked_by_user_id?: Prisma.UuidNullableFilter<"couple_mood_records"> | string | null
   created_at?: Prisma.DateTimeFilter<"couple_mood_records"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"couple_mood_records"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"couple_mood_records"> | Date | string | null
@@ -605,6 +630,7 @@ export type couple_mood_recordsCreateManyCouple_spacesInput = {
   intensity?: number
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -618,6 +644,7 @@ export type couple_mood_recordsUpdateWithoutCouple_spacesInput = {
   intensity?: Prisma.IntFieldUpdateOperationsInput | number
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -631,6 +658,7 @@ export type couple_mood_recordsUncheckedUpdateWithoutCouple_spacesInput = {
   intensity?: Prisma.IntFieldUpdateOperationsInput | number
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -644,6 +672,7 @@ export type couple_mood_recordsUncheckedUpdateManyWithoutCouple_spacesInput = {
   intensity?: Prisma.IntFieldUpdateOperationsInput | number
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -660,6 +689,7 @@ export type couple_mood_recordsSelect<ExtArgs extends runtime.Types.Extensions.I
   intensity?: boolean
   note?: boolean
   tags?: boolean
+  liked_by_user_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -675,6 +705,7 @@ export type couple_mood_recordsSelectCreateManyAndReturn<ExtArgs extends runtime
   intensity?: boolean
   note?: boolean
   tags?: boolean
+  liked_by_user_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -690,6 +721,7 @@ export type couple_mood_recordsSelectUpdateManyAndReturn<ExtArgs extends runtime
   intensity?: boolean
   note?: boolean
   tags?: boolean
+  liked_by_user_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -705,13 +737,14 @@ export type couple_mood_recordsSelectScalar = {
   intensity?: boolean
   note?: boolean
   tags?: boolean
+  liked_by_user_id?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
   is_deleted?: boolean
 }
 
-export type couple_mood_recordsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "space_id" | "created_by_user_id" | "mood_type" | "intensity" | "note" | "tags" | "created_at" | "updated_at" | "deleted_at" | "is_deleted", ExtArgs["result"]["couple_mood_records"]>
+export type couple_mood_recordsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "space_id" | "created_by_user_id" | "mood_type" | "intensity" | "note" | "tags" | "liked_by_user_id" | "created_at" | "updated_at" | "deleted_at" | "is_deleted", ExtArgs["result"]["couple_mood_records"]>
 export type couple_mood_recordsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   couple_spaces?: boolean | Prisma.couple_spacesDefaultArgs<ExtArgs>
 }
@@ -735,6 +768,7 @@ export type $couple_mood_recordsPayload<ExtArgs extends runtime.Types.Extensions
     intensity: number
     note: string | null
     tags: runtime.JsonValue | null
+    liked_by_user_id: string | null
     created_at: Date
     updated_at: Date
     deleted_at: Date | null
@@ -1170,6 +1204,7 @@ export interface couple_mood_recordsFieldRefs {
   readonly intensity: Prisma.FieldRef<"couple_mood_records", 'Int'>
   readonly note: Prisma.FieldRef<"couple_mood_records", 'String'>
   readonly tags: Prisma.FieldRef<"couple_mood_records", 'Json'>
+  readonly liked_by_user_id: Prisma.FieldRef<"couple_mood_records", 'String'>
   readonly created_at: Prisma.FieldRef<"couple_mood_records", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"couple_mood_records", 'DateTime'>
   readonly deleted_at: Prisma.FieldRef<"couple_mood_records", 'DateTime'>
