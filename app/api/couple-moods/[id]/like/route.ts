@@ -30,7 +30,7 @@ export async function POST(
 
   const updated = await prisma.couple_mood_records.update({
     where: { id: moodId },
-    data: { liked_by_user_id: sessionUserId },
+    data: { liked_by_user_id: sessionUserId, liked_at: new Date() },
   })
 
   return ok({
@@ -63,7 +63,7 @@ export async function DELETE(
 
   await prisma.couple_mood_records.update({
     where: { id: moodId },
-    data: { liked_by_user_id: null },
+    data: { liked_by_user_id: null, liked_at: null },
   })
 
   return ok({ liked_by_user_id: null })

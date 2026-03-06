@@ -32,6 +32,7 @@ model mood_records {
   note       String?
   tags       Json?
   liked_by_user_id String? @db.Uuid
+  liked_at         DateTime? @db.Timestamptz(6) 
   created_at DateTime  @default(now()) @db.Timestamptz(6)
   updated_at DateTime  @default(now()) @db.Timestamptz(6)
   deleted_at DateTime? @db.Timestamptz(6)
@@ -88,6 +89,7 @@ model couple_mood_records {
   note              String?
   tags              Json?
   liked_by_user_id  String?        @db.Uuid
+  liked_at          DateTime? @db.Timestamptz(6) 
   created_at        DateTime       @default(now()) @db.Timestamptz(6)
   updated_at        DateTime       @default(now()) @db.Timestamptz(6)
   deleted_at        DateTime?      @db.Timestamptz(6)

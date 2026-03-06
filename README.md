@@ -19,6 +19,15 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## 数据库
 选用Neon平台，本质上是postgreSQL，但是提供了500M的免费存储额度，适合MVP版本
 
+### ORM框架 prisma
+所有表结构都在schema.prisma中，每次修改完数据库后都执行一次：
+
+```bash
+npx prisma generate
+```
+
+即可自动化的生成对应的`Prisma Client`代码。
+
 ## 域名
 vercel部署后所分配的域名不支持国内访问，这里选择`NameSilo`平台进行域名的购买，可以很低的价格买到一些非热门的域名
 

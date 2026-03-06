@@ -41,6 +41,7 @@ export type Mood_recordsMinAggregateOutputType = {
   intensity: number | null
   note: string | null
   liked_by_user_id: string | null
+  liked_at: Date | null
   created_at: Date | null
   updated_at: Date | null
   deleted_at: Date | null
@@ -54,6 +55,7 @@ export type Mood_recordsMaxAggregateOutputType = {
   intensity: number | null
   note: string | null
   liked_by_user_id: string | null
+  liked_at: Date | null
   created_at: Date | null
   updated_at: Date | null
   deleted_at: Date | null
@@ -68,6 +70,7 @@ export type Mood_recordsCountAggregateOutputType = {
   note: number
   tags: number
   liked_by_user_id: number
+  liked_at: number
   created_at: number
   updated_at: number
   deleted_at: number
@@ -91,6 +94,7 @@ export type Mood_recordsMinAggregateInputType = {
   intensity?: true
   note?: true
   liked_by_user_id?: true
+  liked_at?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -104,6 +108,7 @@ export type Mood_recordsMaxAggregateInputType = {
   intensity?: true
   note?: true
   liked_by_user_id?: true
+  liked_at?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -118,6 +123,7 @@ export type Mood_recordsCountAggregateInputType = {
   note?: true
   tags?: true
   liked_by_user_id?: true
+  liked_at?: true
   created_at?: true
   updated_at?: true
   deleted_at?: true
@@ -219,6 +225,7 @@ export type Mood_recordsGroupByOutputType = {
   note: string | null
   tags: runtime.JsonValue | null
   liked_by_user_id: string | null
+  liked_at: Date | null
   created_at: Date
   updated_at: Date
   deleted_at: Date | null
@@ -256,6 +263,7 @@ export type mood_recordsWhereInput = {
   note?: Prisma.StringNullableFilter<"mood_records"> | string | null
   tags?: Prisma.JsonNullableFilter<"mood_records">
   liked_by_user_id?: Prisma.UuidNullableFilter<"mood_records"> | string | null
+  liked_at?: Prisma.DateTimeNullableFilter<"mood_records"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"mood_records"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"mood_records"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"mood_records"> | Date | string | null
@@ -270,6 +278,7 @@ export type mood_recordsOrderByWithRelationInput = {
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   tags?: Prisma.SortOrderInput | Prisma.SortOrder
   liked_by_user_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  liked_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -287,6 +296,7 @@ export type mood_recordsWhereUniqueInput = Prisma.AtLeast<{
   note?: Prisma.StringNullableFilter<"mood_records"> | string | null
   tags?: Prisma.JsonNullableFilter<"mood_records">
   liked_by_user_id?: Prisma.UuidNullableFilter<"mood_records"> | string | null
+  liked_at?: Prisma.DateTimeNullableFilter<"mood_records"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"mood_records"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"mood_records"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"mood_records"> | Date | string | null
@@ -301,6 +311,7 @@ export type mood_recordsOrderByWithAggregationInput = {
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   tags?: Prisma.SortOrderInput | Prisma.SortOrder
   liked_by_user_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  liked_at?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -323,6 +334,7 @@ export type mood_recordsScalarWhereWithAggregatesInput = {
   note?: Prisma.StringNullableWithAggregatesFilter<"mood_records"> | string | null
   tags?: Prisma.JsonNullableWithAggregatesFilter<"mood_records">
   liked_by_user_id?: Prisma.UuidNullableWithAggregatesFilter<"mood_records"> | string | null
+  liked_at?: Prisma.DateTimeNullableWithAggregatesFilter<"mood_records"> | Date | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"mood_records"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"mood_records"> | Date | string
   deleted_at?: Prisma.DateTimeNullableWithAggregatesFilter<"mood_records"> | Date | string | null
@@ -337,6 +349,7 @@ export type mood_recordsCreateInput = {
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   liked_by_user_id?: string | null
+  liked_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -351,6 +364,7 @@ export type mood_recordsUncheckedCreateInput = {
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   liked_by_user_id?: string | null
+  liked_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -365,6 +379,7 @@ export type mood_recordsUpdateInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  liked_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -379,6 +394,7 @@ export type mood_recordsUncheckedUpdateInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  liked_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -393,6 +409,7 @@ export type mood_recordsCreateManyInput = {
   note?: string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   liked_by_user_id?: string | null
+  liked_at?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   deleted_at?: Date | string | null
@@ -407,6 +424,7 @@ export type mood_recordsUpdateManyMutationInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  liked_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -421,6 +439,7 @@ export type mood_recordsUncheckedUpdateManyInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   liked_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  liked_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -435,6 +454,7 @@ export type mood_recordsCountOrderByAggregateInput = {
   note?: Prisma.SortOrder
   tags?: Prisma.SortOrder
   liked_by_user_id?: Prisma.SortOrder
+  liked_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -452,6 +472,7 @@ export type mood_recordsMaxOrderByAggregateInput = {
   intensity?: Prisma.SortOrder
   note?: Prisma.SortOrder
   liked_by_user_id?: Prisma.SortOrder
+  liked_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -465,6 +486,7 @@ export type mood_recordsMinOrderByAggregateInput = {
   intensity?: Prisma.SortOrder
   note?: Prisma.SortOrder
   liked_by_user_id?: Prisma.SortOrder
+  liked_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
@@ -497,6 +519,7 @@ export type mood_recordsSelect<ExtArgs extends runtime.Types.Extensions.Internal
   note?: boolean
   tags?: boolean
   liked_by_user_id?: boolean
+  liked_at?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -511,6 +534,7 @@ export type mood_recordsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   note?: boolean
   tags?: boolean
   liked_by_user_id?: boolean
+  liked_at?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -525,6 +549,7 @@ export type mood_recordsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   note?: boolean
   tags?: boolean
   liked_by_user_id?: boolean
+  liked_at?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
@@ -539,13 +564,14 @@ export type mood_recordsSelectScalar = {
   note?: boolean
   tags?: boolean
   liked_by_user_id?: boolean
+  liked_at?: boolean
   created_at?: boolean
   updated_at?: boolean
   deleted_at?: boolean
   is_deleted?: boolean
 }
 
-export type mood_recordsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "mood_type" | "intensity" | "note" | "tags" | "liked_by_user_id" | "created_at" | "updated_at" | "deleted_at" | "is_deleted", ExtArgs["result"]["mood_records"]>
+export type mood_recordsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "mood_type" | "intensity" | "note" | "tags" | "liked_by_user_id" | "liked_at" | "created_at" | "updated_at" | "deleted_at" | "is_deleted", ExtArgs["result"]["mood_records"]>
 
 export type $mood_recordsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "mood_records"
@@ -558,6 +584,7 @@ export type $mood_recordsPayload<ExtArgs extends runtime.Types.Extensions.Intern
     note: string | null
     tags: runtime.JsonValue | null
     liked_by_user_id: string | null
+    liked_at: Date | null
     created_at: Date
     updated_at: Date
     deleted_at: Date | null
@@ -992,6 +1019,7 @@ export interface mood_recordsFieldRefs {
   readonly note: Prisma.FieldRef<"mood_records", 'String'>
   readonly tags: Prisma.FieldRef<"mood_records", 'Json'>
   readonly liked_by_user_id: Prisma.FieldRef<"mood_records", 'String'>
+  readonly liked_at: Prisma.FieldRef<"mood_records", 'DateTime'>
   readonly created_at: Prisma.FieldRef<"mood_records", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"mood_records", 'DateTime'>
   readonly deleted_at: Prisma.FieldRef<"mood_records", 'DateTime'>

@@ -15,6 +15,7 @@ import { SpaceSwitchDisplay } from "@/components/space-switch-display"
 import { InvitePartnerModal } from "@/components/invite-partner-modal"
 import { PendingInvitationStatus } from "@/components/pending-invitation-status"
 import { InviteAcceptModal } from "@/components/invite-accept-modal"
+import { LikeNotifications } from "@/components/like-notifications"
 import type { CoupleSpace } from "@/components/space-switch"
 
 // Mock Data removed
@@ -55,6 +56,16 @@ type CoupleMoodItem = {
   tags?: string[]
   created_at: string
   liked_by_user_id?: string | null
+  liked_at?: string | null
+}
+
+type LikeNotification = {
+  id: string
+  likerName: string
+  likerAvatar?: string
+  moodNote: string
+  moodType: string
+  likedAt: string
 }
 
 // Mood Config Map
@@ -84,6 +95,9 @@ export default function HistoryPage() {
   const [showInviteModal, setShowInviteModal] = React.useState(false)
   const [showAcceptModal, setShowAcceptModal] = React.useState(false)
   const [pendingInvitation, setPendingInvitation] = React.useState<CoupleSpace | null>(null)
+
+  const [notifications, setNotifications] = React.useState<LikeNotification[]>([])
+  const [hasUnreadLikes, setHasUnreadLikes] = React.useState(false)
 
   // Fetch data
   const mapItem = React.useCallback((item: ServerMoodItem | CoupleMoodItem): JournalEntry => {
@@ -286,6 +300,46 @@ export default function HistoryPage() {
     setIsFetchingMore(false)
   }, [fetchHistoryPage, hasMore, isFetchingMore, loading, offset])
 
+  const fetchLikeNotifications = React.useCallback(async () => {
+    if (!userId || userId === "guest") return
+    try {
+      const res = await fetch(buildApiUrl("/notifications/likes"), { credentials: "include" })
+      if (!res.ok) return
+      const json = await res.json()
+      const items = (json?.data?.items || []) as Array<{
+        id: string
+        liker_name: string
+        mood_note: string
+        mood_type: string
+        liked_at: string
+      }>
+      const mapped: LikeNotification[] = items.map((item) => ({
+        id: item.id,
+        likerName: item.liker_name,
+        moodNote: item.mood_note || "",
+        moodType: item.mood_type,
+        likedAt: item.liked_at,
+      }))
+      setNotifications(mapped)
+      const hasUnread = json?.data?.hasUnread ?? false
+      setHasUnreadLikes(hasUnread)
+    } catch (error) {
+      console.error("Failed to fetch like notifications:", error)
+    }
+  }, [userId])
+
+  const handleOpenNotifications = React.useCallback(() => {
+    if (hasUnreadLikes) {
+      setHasUnreadLikes(false)
+    }
+  }, [hasUnreadLikes])
+
+  React.useEffect(() => {
+    if (userId && userId !== "guest") {
+      fetchLikeNotifications()
+    }
+  }, [userId, fetchLikeNotifications])
+
   React.useEffect(() => {
     if (!sentinelRef.current) return
     const observer = new IntersectionObserver((entries) => {
@@ -324,15 +378,22 @@ export default function HistoryPage() {
       <main className="w-full max-w-md">
         
         {/* Header */}
-        <header className="flex items-center gap-4 mb-6 pt-4 safe-area-header">
-          <Link href="/">
-             <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/5 -ml-2">
-               <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-             </Button>
-          </Link>
-          <h1 className="text-2xl font-normal text-foreground tracking-wide">
-            情绪回顾
-          </h1>
+        <header className="flex items-center justify-between gap-4 mb-6 pt-4 safe-area-header">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/5 -ml-2">
+                <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-normal text-foreground tracking-wide">
+              情绪回顾
+            </h1>
+          </div>
+          <LikeNotifications
+            notifications={notifications}
+            hasUnread={hasUnreadLikes}
+            onOpen={handleOpenNotifications}
+          />
         </header>
 
         {!loadingSpaces && (
