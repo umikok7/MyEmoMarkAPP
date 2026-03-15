@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { CloudSun, Leaf, Wind, Droplets, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -12,6 +11,86 @@ import { Button } from "@/components/ui/button"
 import { OnboardingGuide } from "@/components/onboarding-guide"
 import { SwipeableTodoItem } from "@/components/SwipeableTodoItem"
 import { MoodSpaceSelector, useMoodSpaceSelector } from "@/components/mood-space-selector"
+import { ChevronDown, ListTodo, Plus, Pin, CheckCircle2 } from "lucide-react"
+
+const ModuleCard = ({
+	title,
+	icon,
+	children,
+	summary,
+	isExpanded,
+	onToggle,
+	colorScheme = "tasks",
+}: ModuleCardProps) => {
+	const colorClasses = {
+		tasks: {
+			bg: "bg-[#fdfcfa]",
+			iconBg: "bg-amber-100",
+			iconColor: "text-amber-600",
+		},
+		mood: {
+			bg: "bg-[#f8f6f9]",
+			iconBg: "bg-rose-100",
+			iconColor: "text-rose-600",
+		},
+	}
+	const colors = colorClasses[colorScheme]
+
+	return (
+		<div
+			className={cn(
+				"rounded-3xl overflow-hidden transition-all duration-300 ease-out border border-black/[0.03]",
+				colors.bg,
+				isExpanded ? "shadow-lg shadow-black/5" : "hover:shadow-md hover:shadow-black/3"
+			)}
+		>
+			<div className="px-4 py-3 flex items-start justify-between">
+				<div className="flex items-center gap-2.5">
+					<div
+						className={cn(
+							"w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+							colors.iconBg,
+							colors.iconColor
+						)}
+					>
+						{icon}
+					</div>
+					<div className="text-left pt-0.5">
+						<h3 className="text-[14px] font-semibold text-foreground/90">{title}</h3>
+					</div>
+				</div>
+				<button
+					onClick={onToggle}
+					className={cn(
+						"w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 mt-1",
+						isExpanded ? "bg-black/[0.06]" : "bg-white/70",
+						"cursor-pointer"
+					)}
+				>
+					<ChevronDown
+						className={cn(
+							"w-4 h-4 text-foreground/50 transition-transform duration-300",
+							isExpanded && "rotate-180"
+						)}
+					/>
+				</button>
+			</div>
+
+			<div className="px-4 pb-4">
+				{summary}
+			</div>
+
+			<div
+				className={cn(
+					"transition-all duration-300 ease-out overflow-hidden",
+					isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+				)}
+			>
+				<div className="px-4 pb-4 pt-2 border-t border-black/[0.04]">{children}</div>
+			</div>
+		</div>
+	)
+}
 
 type MoodType = "happy" | "calm" | "anxious" | "sad" | "angry"
 
@@ -28,6 +107,16 @@ type ServerTaskItem = {
 	is_done: boolean
 	is_pinned?: boolean
 	created_at: string
+}
+
+type ModuleCardProps = {
+	title: string
+	icon: React.ReactNode
+	children: React.ReactNode
+	summary: React.ReactNode
+	isExpanded: boolean
+	onToggle: () => void
+	colorScheme?: "tasks" | "mood"
 }
 
 const MOODS: Array<{
@@ -118,8 +207,10 @@ export default function Home() {
 	const [isDayLoading, setIsDayLoading] = React.useState(true)
 	const [isAddTaskSheetOpen, setIsAddTaskSheetOpen] = React.useState(false)
 	const [isSavingComplete, setIsSavingComplete] = React.useState(false)
+	const [isTasksExpanded, setIsTasksExpanded] = React.useState(false)
+	const [isMoodExpanded, setIsMoodExpanded] = React.useState(false)
+	const [tasksFilter, setTasksFilter] = React.useState<"all" | "pinned" | "normal" | "done" | null>(null)
 	const loginButtonRef = React.useRef<HTMLAnchorElement | null>(null)
-	const tasksSectionRef = React.useRef<HTMLElement | null>(null)
 	const dateScrollRef = React.useRef<HTMLDivElement | null>(null)
 	const noteOpenBeforeMoodRef = React.useRef(false)
 	const addTaskInputRef = React.useRef<HTMLInputElement | null>(null)
@@ -628,113 +719,185 @@ export default function Home() {
 					</div>
 				</header>
 
-				{/* Healing Atmosphere Banner */}
-				<div className="relative overflow-hidden bg-gradient-to-br from-[#f9f6f3] via-[#fdfcfb] to-white border-b border-black/[0.02]">
-					<div className="px-6 py-8 relative flex items-center justify-between">
-						{/* Text Content */}
-						<div className="relative z-10 max-w-[55%]">
-						<p className="text-lg font-bold tracking-wide text-stone-800">
-							Today
-							<span className="block mt-1 h-0.5 w-8 bg-stone-400 rounded-full"></span>
-						</p>
-							<h2 className="text-xl font-normal text-foreground/90 leading-relaxed tracking-wide mt-4">
-								Have a nice day~
-							</h2>
-						</div>
-
-						{/* Coffee Bean Illustration */}
-						<div className="relative w-20 h-20 opacity-30">
-							<Image 
-								src="/coffee bean-pana.svg" 
-								alt="" 
-								width={80}
-								height={80}
-								className="w-full h-full object-contain"
-							/>
-						</div>
-					</div>
-				</div>
-
-				<div className="px-6 pt-6 space-y-6">
-					<section ref={tasksSectionRef} className="space-y-3">
-						<div className="flex items-center justify-between">
-							<p className="text-lg font-bold tracking-wide text-stone-800">
-								Tasks
-								<span className="block mt-1 h-0.5 w-8 bg-stone-400 rounded-full"></span>
-							</p>
-							<div className="flex items-center gap-2">
-								<p className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground/50">
-									{completedTasks + pinnedTasks.filter(t => t.done).length} / {totalTasks + pinnedTasks.length} done
-								</p>
-								<div className="h-1.5 w-20 bg-black/[0.04] rounded-full overflow-hidden">
-									<div
-										className="h-full bg-foreground/15 rounded-full transition-[width] duration-700 ease-out"
-										style={{ width: `${taskProgress}%` }}
-									/>
+				<div className="px-6 pt-6 space-y-4">
+					<ModuleCard
+						title="Tasks"
+						icon={<ListTodo className="w-5 h-5" />}
+						isExpanded={isTasksExpanded}
+						onToggle={() => setIsTasksExpanded(!isTasksExpanded)}
+						colorScheme="tasks"
+						summary={
+							<div className="mt-2">
+								<div className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-stone-100">
+									<div className="grid grid-cols-2 gap-3">
+										<button 
+											onClick={() => setTasksFilter("all")}
+											className="col-span-2 bg-stone-50 rounded-xl p-4 text-left hover:bg-stone-100 transition-colors cursor-pointer"
+										>
+											<div className="flex items-center justify-between">
+												<div>
+													<p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Total</p>
+													<p className="text-5xl font-bold text-stone-800 mt-1">{totalWithPinned}</p>
+												</div>
+												<div className="w-14 h-14 bg-stone-200 rounded-full flex items-center justify-center">
+													<ListTodo className="w-7 h-7 text-stone-600" />
+												</div>
+											</div>
+										</button>
+										
+										<button 
+											onClick={() => setTasksFilter("pinned")}
+											className="bg-amber-50 rounded-xl p-3 text-left hover:bg-amber-100 transition-colors cursor-pointer"
+										>
+											<div className="flex items-center gap-2 mb-2">
+												<Pin className="w-4 h-4 text-amber-500" />
+												<span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Pinned</span>
+											</div>
+											<p className="text-3xl font-bold text-stone-800">{pinnedTasks.length}</p>
+										</button>
+										
+										<button 
+											onClick={() => setTasksFilter("normal")}
+											className="bg-stone-50 rounded-xl p-3 text-left hover:bg-stone-100 transition-colors cursor-pointer"
+										>
+											<div className="flex items-center gap-2 mb-2">
+												<span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Normal</span>
+											</div>
+											<p className="text-3xl font-bold text-stone-800">{totalTasks}</p>
+										</button>
+										
+										<button 
+											onClick={() => setTasksFilter("done")}
+											className="bg-green-50 rounded-xl p-3 text-left hover:bg-green-100 transition-colors cursor-pointer"
+										>
+											<div className="flex items-center gap-2 mb-2">
+												<CheckCircle2 className="w-4 h-4 text-green-500" />
+												<span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Done</span>
+											</div>
+											<p className="text-3xl font-bold text-stone-800">{completedWithPinned}</p>
+										</button>
+										
+										<div className="col-span-2 bg-stone-100 rounded-xl p-3">
+											<div className="flex items-center justify-between mb-2">
+												<span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Progress</span>
+												<span className="text-sm font-bold text-stone-700">{taskProgress}%</span>
+											</div>
+											<div className="h-2 bg-stone-200 rounded-full overflow-hidden">
+												<div 
+													className="h-full bg-stone-700 rounded-full transition-all duration-700" 
+													style={{ width: `${taskProgress}%` }}
+												/>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
-						</div>
-						<div className="rounded-2xl px-4 py-3">
-							<div className="space-y-1.5">
-								{isDayLoading ? (
-									Array.from({ length: 3 }).map((_, index) => (
-										<div
-											key={`task-skeleton-${index}`}
-											className="h-9 w-full rounded-lg bg-black/[0.03] animate-pulse"
-										/>
-									))
-								) : pinnedTasks.length === 0 && tasks.length === 0 ? (
-									<p className="text-sm text-muted-foreground/60 text-center py-6 font-normal tracking-wide">No tasks yet</p>
-								) : (
-									<>
-										{pinnedTasks.length > 0 && (
-											<div className="mb-2">
-												<p className="text-[10px] tracking-[0.2em] uppercase text-amber-600/70 mb-1.5">Pinned</p>
-												{pinnedTasks.map((task) => (
-													<div key={task.id} className="-ml-[36px]">
-														<SwipeableTodoItem
-															task={task}
-															onDelete={handleDeleteTask}
-															onToggle={toggleTask}
-															onPin={togglePin}
-														/>
-													</div>
-												))}
-											</div>
-										)}
-										{tasks.map((task) => (
-											<div key={task.id} className="-ml-[36px]">
+						}
+					>
+						{isDayLoading ? (
+							<div className="space-y-2">
+								{Array.from({ length: 3 }).map((_, index) => (
+									<div
+										key={`task-skeleton-${index}`}
+										className="h-12 w-full rounded-xl bg-black/[0.03] animate-pulse"
+									/>
+								))}
+							</div>
+						) : pinnedTasks.length === 0 && tasks.length === 0 ? (
+							<div className="text-center py-8">
+								<p className="text-sm text-muted-foreground/60 font-normal tracking-wide mb-4">No tasks yet</p>
+								<Button
+									onClick={() => setIsAddTaskSheetOpen(true)}
+									className="rounded-full px-5 py-2.5 text-xs tracking-[0.2em] uppercase bg-foreground/90 text-white hover:bg-foreground shadow-md"
+								>
+									<Plus className="w-4 h-4 mr-1.5" />
+									Add Task
+								</Button>
+							</div>
+						) : (
+							<div className="space-y-1">
+								{pinnedTasks.length > 0 && (
+									<div className="mb-3">
+										<p className="text-[10px] tracking-[0.2em] uppercase text-amber-600/70 mb-2 pl-1">Pinned</p>
+										<div className="space-y-1">
+											{pinnedTasks.map((task) => (
 												<SwipeableTodoItem
+													key={task.id}
 													task={task}
 													onDelete={handleDeleteTask}
 													onToggle={toggleTask}
 													onPin={togglePin}
 												/>
-											</div>
-										))}
-									</>
+											))}
+										</div>
+									</div>
 								)}
+								{tasks.map((task) => (
+									<SwipeableTodoItem
+										key={task.id}
+										task={task}
+										onDelete={handleDeleteTask}
+										onToggle={toggleTask}
+										onPin={togglePin}
+									/>
+								))}
 							</div>
-						</div>
-					</section>
+						)}
+					</ModuleCard>
 
-					<section className="space-y-4">
-						<div className="flex items-center justify-between">
-							<p className="text-lg font-bold tracking-wide text-stone-800">
-								Mood
-								<span className="block mt-1 h-0.5 w-8 bg-stone-400 rounded-full"></span>
-							</p>
-							{!loadingSpaces && selectedMood && (
-								<MoodSpaceSelector
-									selectedSpace={selectedSpace}
-									coupleSpaces={coupleSpaces}
-									selectedCoupleSpaceId={selectedCoupleSpaceId}
-									onSpaceChange={handleSpaceChange}
-								/>
-							)}
-						</div>
+					<ModuleCard
+						title="Mood"
+						icon={<CloudSun className="w-5 h-5" />}
+						isExpanded={isMoodExpanded}
+						onToggle={() => setIsMoodExpanded(!isMoodExpanded)}
+						colorScheme="mood"
+						summary={
+							<div className="mt-2">
+								<div className="bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-stone-100">
+									<div className="flex items-center justify-between">
+										<div className="flex items-center gap-3">
+											<div className="flex -space-x-2">
+												{MOODS.slice(0, 4).map((mood) => {
+													const Icon = mood.icon
+													return (
+														<div
+															key={mood.id}
+															className="w-8 h-8 rounded-full bg-stone-50 border-2 border-white flex items-center justify-center"
+														>
+															<Icon className="w-4 h-4 text-stone-400" strokeWidth={1.5} />
+														</div>
+													)
+												})}
+											</div>
+											<p className="text-xs font-medium text-stone-400">week</p>
+										</div>
+										<div className="h-6 w-px bg-stone-200" />
+										<div className="text-right">
+											{selectedMood ? (
+												<>
+													{MOODS.filter(m => m.id === selectedMood).map(m => {
+														const Icon = m.icon
+														return (
+															<div key={m.id} className="flex items-center gap-2 justify-end">
+																<Icon className="w-5 h-5 text-stone-600" strokeWidth={1.5} />
+																<p className="text-lg font-semibold text-stone-700">{m.label}</p>
+															</div>
+														)
+													})}
+												</>
+											) : (
+												<>
+													<p className="text-lg font-semibold text-stone-400">—</p>
+												</>
+											)}
+										</div>
+									</div>
+								</div>
+							</div>
+						}
+					>
 						<div className={cn(
-							"flex items-center justify-between gap-2 transition-all duration-500",
+							"flex items-center justify-between gap-2 transition-all duration-500 pb-3",
 							isSavingComplete ? "opacity-40 grayscale" : "opacity-100"
 						)}>
 							{MOODS.map((mood) => {
@@ -754,55 +917,63 @@ export default function Home() {
 											setIsNoteOpen(true)
 										}}
 										className={cn(
-											"flex flex-col items-center gap-1.5 px-4 py-3 rounded-full transition-all duration-300",
+											"flex flex-col items-center gap-1.5 flex-1 py-3 rounded-2xl transition-all duration-300 min-h-[70px]",
 											isSelected
-												? "bg-black/[0.06] text-foreground scale-105 ring-1 ring-black/10 shadow-[0_0_0_6px_rgba(0,0,0,0.03)] font-medium"
-												: "text-muted-foreground/70"
+												? "bg-white text-foreground shadow-md ring-1 ring-black/5"
+												: "text-muted-foreground/70 hover:bg-white/50"
 										)}
 									>
 										<Icon className="h-5 w-5" strokeWidth={1.5} />
-										<span className="text-[11px] tracking-[0.2em] uppercase font-normal">{mood.label}</span>
+										<span className="text-[10px] tracking-[0.2em] uppercase font-normal">{mood.label}</span>
 									</button>
 								)
 							})}
 						</div>
-					</section>
 
-					<section className="space-y-3">
-						<button
-							onClick={() => setIsNoteOpen((prev) => !prev)}
-							className={cn(
-								"flex w-full items-center justify-between py-2 transition-all duration-500",
+						{selectedMood && (
+							<div className={cn(
+								"space-y-3 pt-3 border-t border-black/[0.04]",
 								isSavingComplete ? "opacity-40" : "opacity-100"
-							)}
-						>
-							<span className="text-sm font-bold tracking-wide text-stone-700">
-								Note
-							</span>
-							<span className={cn(
-								"text-xs tracking-widest text-stone-400 uppercase transition-all duration-300",
-								isNoteOpen && "rotate-180"
 							)}>
-								{isNoteOpen ? "Close" : "Open"}
-							</span>
-						</button>
-						<div
-							className={cn(
-								"transition-all duration-500 overflow-hidden",
-								isNoteOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
-							)}
-						>
-							<Textarea
-								value={note}
-								onChange={(event) => setNote(event.target.value)}
-								placeholder="Write here"
-								className={cn(
-									"border border-black/[0.04] rounded-2xl px-4 py-4 text-sm leading-relaxed bg-[#fbfbfb] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:ring-0 focus-visible:border-black/10 transition-all duration-500",
-									isSavingComplete ? "opacity-40" : "opacity-100"
-								)}
-							/>
-						</div>
-					</section>
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-bold tracking-wide text-stone-700">Note</span>
+									<button
+										onClick={() => setIsNoteOpen((prev) => !prev)}
+										className="text-xs tracking-widest text-stone-400 uppercase transition-all duration-300 hover:text-stone-600"
+									>
+										{isNoteOpen ? "Hide" : "Show"}
+									</button>
+								</div>
+								<div
+									className={cn(
+										"transition-all duration-500 overflow-hidden",
+										isNoteOpen ? "max-h-32 opacity-100" : "max-h-0 opacity-0"
+									)}
+								>
+									<Textarea
+										value={note}
+										onChange={(event) => setNote(event.target.value)}
+										placeholder="Write here..."
+										className={cn(
+											"border border-black/[0.04] rounded-xl px-4 py-3 text-sm leading-relaxed bg-white shadow-sm focus-visible:ring-0 focus-visible:border-black/10 transition-all duration-500 resize-none",
+											isSavingComplete ? "opacity-40" : "opacity-100"
+										)}
+									/>
+								</div>
+							</div>
+						)}
+
+						{!loadingSpaces && selectedMood && (
+							<div className="pt-3">
+								<MoodSpaceSelector
+									selectedSpace={selectedSpace}
+									coupleSpaces={coupleSpaces}
+									selectedCoupleSpaceId={selectedCoupleSpaceId}
+									onSpaceChange={handleSpaceChange}
+								/>
+							</div>
+						)}
+					</ModuleCard>
 				</div>
 
 				{/* Floating Add Task Button */}
@@ -832,6 +1003,107 @@ export default function Home() {
 					<div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[60] animate-in fade-in scale-95 duration-500">
 						<div className="rounded-full px-7 py-3.5 text-xs tracking-[0.3em] uppercase bg-muted-foreground/10 text-muted-foreground/60">
 							Saved
+						</div>
+					</div>
+				)}
+				{/* Tasks Filter Modal - Center Display Only */}
+				{tasksFilter && (
+					<div className="fixed inset-0 z-[70] flex items-center justify-center p-6">
+						<div
+							className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300"
+							onClick={() => setTasksFilter(null)}
+						/>
+						<div 
+							className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+						>
+							<div className="px-6 py-5 border-b border-stone-100">
+								<div className="flex items-center justify-between">
+									<h3 className="text-lg font-bold text-stone-800">
+										{tasksFilter === "all" && "All Tasks"}
+										{tasksFilter === "pinned" && "Pinned"}
+										{tasksFilter === "normal" && "Normal"}
+										{tasksFilter === "done" && "Done"}
+									</h3>
+									<button
+										onClick={() => setTasksFilter(null)}
+										className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200 transition"
+									>
+										<span className="text-lg font-light leading-none">×</span>
+									</button>
+								</div>
+							</div>
+							<div className="px-6 py-4 max-h-[50vh] overflow-y-auto">
+								{tasksFilter === "all" && (
+									<div className="space-y-3">
+										{pinnedTasks.length > 0 && (
+											<div className="mb-4">
+												<p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-2">Pinned</p>
+												<div className="space-y-2">
+													{pinnedTasks.map((task) => (
+														<div key={task.id} className="flex items-center gap-3 py-2">
+															<div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", task.done ? "bg-stone-800 border-stone-800" : "border-stone-300")} />
+															<span className={cn("text-sm font-medium", task.done ? "text-stone-400 line-through" : "text-stone-700")}>{task.title}</span>
+														</div>
+													))}
+												</div>
+											</div>
+										)}
+										<div className="space-y-2">
+											{tasks.map((task) => (
+												<div key={task.id} className="flex items-center gap-3 py-2">
+													<div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", task.done ? "bg-stone-800 border-stone-800" : "border-stone-300")} />
+													<span className={cn("text-sm font-medium", task.done ? "text-stone-400 line-through" : "text-stone-700")}>{task.title}</span>
+												</div>
+											))}
+										</div>
+										{pinnedTasks.length === 0 && tasks.length === 0 && (
+											<p className="text-sm text-stone-400 text-center py-6">No tasks</p>
+										)}
+									</div>
+								)}
+								{tasksFilter === "pinned" && (
+									<div className="space-y-2">
+										{pinnedTasks.map((task) => (
+											<div key={task.id} className="flex items-center gap-3 py-2">
+												<div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", task.done ? "bg-stone-800 border-stone-800" : "border-stone-300")} />
+												<span className={cn("text-sm font-medium", task.done ? "text-stone-400 line-through" : "text-stone-700")}>{task.title}</span>
+											</div>
+										))}
+										{pinnedTasks.length === 0 && (
+											<p className="text-sm text-stone-400 text-center py-6">No pinned tasks</p>
+										)}
+									</div>
+								)}
+								{tasksFilter === "normal" && (
+									<div className="space-y-2">
+										{tasks.map((task) => (
+											<div key={task.id} className="flex items-center gap-3 py-2">
+												<div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", task.done ? "bg-stone-800 border-stone-800" : "border-stone-300")} />
+												<span className={cn("text-sm font-medium", task.done ? "text-stone-400 line-through" : "text-stone-700")}>{task.title}</span>
+											</div>
+										))}
+										{tasks.length === 0 && (
+											<p className="text-sm text-stone-400 text-center py-6">No normal tasks</p>
+										)}
+									</div>
+								)}
+								{tasksFilter === "done" && (
+									<div className="space-y-2">
+										{[...pinnedTasks, ...tasks].filter(t => t.done).map((task) => (
+											<div key={task.id} className="flex items-center gap-3 py-2">
+												<div className="w-4 h-4 rounded-full bg-stone-800 border-stone-800 flex-shrink-0" />
+												<span className="text-sm font-medium text-stone-400 line-through">{task.title}</span>
+											</div>
+										))}
+										{[...pinnedTasks, ...tasks].filter(t => t.done).length === 0 && (
+											<p className="text-sm text-stone-400 text-center py-6">No completed tasks</p>
+										)}
+									</div>
+								)}
+							</div>
+							<div className="px-6 py-4 bg-stone-50 border-t border-stone-100">
+								<p className="text-xs text-stone-400 text-center">View only • Use arrow to manage</p>
+							</div>
 						</div>
 					</div>
 				)}
