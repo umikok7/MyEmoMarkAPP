@@ -106,6 +106,7 @@ type ServerTaskItem = {
 	title: string
 	is_done: boolean
 	is_pinned?: boolean
+	completed_at: string | null
 	created_at: string
 }
 
@@ -263,8 +264,9 @@ export default function Home() {
 		}))
 	}, [userId])
 
-	const fetchPinnedTasks = React.useCallback(async () => {
+	const fetchPinnedTasks = React.useCallback(async (date: Date) => {
 		if (!userId || userId === "guest") return [] as TaskItem[]
+		const dateKey = toDateKey(date)
 		const res = await fetch(
 			buildApiUrl("/tasks", {
 				include_pinned: "true",
@@ -277,12 +279,16 @@ export default function Home() {
 		}
 		const json = await res.json()
 		const items = (json?.data?.items || []) as ServerTaskItem[]
-		return items.map((item) => ({
-			id: item.id,
-			title: item.title,
-			done: item.is_done,
-			is_pinned: true,
-		}))
+		return items.map((item) => {
+			const isCompletedBeforeDate = item.completed_at ? 
+				new Date(item.completed_at).toISOString().split("T")[0] <= dateKey : false
+			return {
+				id: item.id,
+				title: item.title,
+				done: isCompletedBeforeDate,
+				is_pinned: true,
+			}
+		})
 	}, [userId])
 
 	React.useEffect(() => {
@@ -293,7 +299,7 @@ export default function Home() {
 			try {
 				const [dayTasks, pinned] = await Promise.all([
 					fetchTasksForDate(selectedDate),
-					fetchPinnedTasks(),
+					fetchPinnedTasks(selectedDate),
 				])
 				if (cancelled) return
 				setSelectedMood(null)
@@ -736,7 +742,7 @@ export default function Home() {
 										>
 											<div className="flex items-center justify-between">
 												<div>
-													<p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Total</p>
+													<p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">全部代办</p>
 													<p className="text-5xl font-bold text-stone-800 mt-1">{totalWithPinned}</p>
 												</div>
 												<div className="w-14 h-14 bg-stone-200 rounded-full flex items-center justify-center">
@@ -751,7 +757,7 @@ export default function Home() {
 										>
 											<div className="flex items-center gap-2 mb-2">
 												<Pin className="w-4 h-4 text-amber-500" />
-												<span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Pinned</span>
+												<span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">置顶</span>
 											</div>
 											<p className="text-3xl font-bold text-stone-800">{pinnedTasks.length}</p>
 										</button>
@@ -761,9 +767,9 @@ export default function Home() {
 											className="bg-stone-50 rounded-xl p-3 text-left hover:bg-stone-100 transition-colors cursor-pointer"
 										>
 											<div className="flex items-center gap-2 mb-2">
-												<span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Normal</span>
+												<span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">未置顶</span>
 											</div>
-											<p className="text-3xl font-bold text-stone-800">{totalTasks}</p>
+											<p className="text-3xl font-bold text-stone-800">{tasks.filter((task) => !task.done).length}</p>
 										</button>
 										
 										<button 
@@ -772,14 +778,14 @@ export default function Home() {
 										>
 											<div className="flex items-center gap-2 mb-2">
 												<CheckCircle2 className="w-4 h-4 text-green-500" />
-												<span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Done</span>
+												<span className="text-xs font-semibold text-green-600 uppercase tracking-wide">已完成</span>
 											</div>
 											<p className="text-3xl font-bold text-stone-800">{completedWithPinned}</p>
 										</button>
 										
 										<div className="col-span-2 bg-stone-100 rounded-xl p-3">
 											<div className="flex items-center justify-between mb-2">
-												<span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Progress</span>
+												<span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">进度条</span>
 												<span className="text-sm font-bold text-stone-700">{taskProgress}%</span>
 											</div>
 											<div className="h-2 bg-stone-200 rounded-full overflow-hidden">
@@ -1076,13 +1082,13 @@ export default function Home() {
 								)}
 								{tasksFilter === "normal" && (
 									<div className="space-y-2">
-										{tasks.map((task) => (
+										{tasks.filter((task) => !task.done).map((task) => (
 											<div key={task.id} className="flex items-center gap-3 py-2">
 												<div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", task.done ? "bg-stone-800 border-stone-800" : "border-stone-300")} />
 												<span className={cn("text-sm font-medium", task.done ? "text-stone-400 line-through" : "text-stone-700")}>{task.title}</span>
 											</div>
 										))}
-										{tasks.length === 0 && (
+										{tasks.filter((task) => !task.done).length === 0 && (
 											<p className="text-sm text-stone-400 text-center py-6">No normal tasks</p>
 										)}
 									</div>
@@ -1102,7 +1108,7 @@ export default function Home() {
 								)}
 							</div>
 							<div className="px-6 py-4 bg-stone-50 border-t border-stone-100">
-								<p className="text-xs text-stone-400 text-center">View only • Use arrow to manage</p>
+								<p className="text-xs text-stone-400 text-center">只读，点击右上角箭头进行修改。</p>
 							</div>
 						</div>
 					</div>

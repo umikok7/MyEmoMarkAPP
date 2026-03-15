@@ -24,9 +24,14 @@ export async function PATCH(
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
 
-  const updateData: { is_done?: boolean; is_pinned?: boolean } = {}
+  const updateData: { is_done?: boolean; is_pinned?: boolean; completed_at?: Date | null } = {}
   if (typeof body.is_done === "boolean") {
     updateData.is_done = body.is_done
+    if (body.is_done) {
+      updateData.completed_at = new Date()
+    } else {
+      updateData.completed_at = null
+    }
   }
   if (typeof body.is_pinned === "boolean") {
     updateData.is_pinned = body.is_pinned
@@ -46,6 +51,7 @@ export async function PATCH(
       task_date: true,
       is_done: true,
       is_pinned: true,
+      completed_at: true,
       created_at: true,
     },
   })

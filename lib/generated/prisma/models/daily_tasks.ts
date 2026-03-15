@@ -35,6 +35,7 @@ export type Daily_tasksMinAggregateOutputType = {
   updated_at: Date | null
   deleted_at: Date | null
   is_deleted: boolean | null
+  completed_at: Date | null
 }
 
 export type Daily_tasksMaxAggregateOutputType = {
@@ -48,6 +49,7 @@ export type Daily_tasksMaxAggregateOutputType = {
   updated_at: Date | null
   deleted_at: Date | null
   is_deleted: boolean | null
+  completed_at: Date | null
 }
 
 export type Daily_tasksCountAggregateOutputType = {
@@ -61,6 +63,7 @@ export type Daily_tasksCountAggregateOutputType = {
   updated_at: number
   deleted_at: number
   is_deleted: number
+  completed_at: number
   _all: number
 }
 
@@ -76,6 +79,7 @@ export type Daily_tasksMinAggregateInputType = {
   updated_at?: true
   deleted_at?: true
   is_deleted?: true
+  completed_at?: true
 }
 
 export type Daily_tasksMaxAggregateInputType = {
@@ -89,6 +93,7 @@ export type Daily_tasksMaxAggregateInputType = {
   updated_at?: true
   deleted_at?: true
   is_deleted?: true
+  completed_at?: true
 }
 
 export type Daily_tasksCountAggregateInputType = {
@@ -102,6 +107,7 @@ export type Daily_tasksCountAggregateInputType = {
   updated_at?: true
   deleted_at?: true
   is_deleted?: true
+  completed_at?: true
   _all?: true
 }
 
@@ -188,6 +194,7 @@ export type Daily_tasksGroupByOutputType = {
   updated_at: Date
   deleted_at: Date | null
   is_deleted: boolean
+  completed_at: Date | null
   _count: Daily_tasksCountAggregateOutputType | null
   _min: Daily_tasksMinAggregateOutputType | null
   _max: Daily_tasksMaxAggregateOutputType | null
@@ -222,6 +229,7 @@ export type daily_tasksWhereInput = {
   updated_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
   is_deleted?: Prisma.BoolFilter<"daily_tasks"> | boolean
+  completed_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
   users?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
 }
 
@@ -236,6 +244,7 @@ export type daily_tasksOrderByWithRelationInput = {
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
   is_deleted?: Prisma.SortOrder
+  completed_at?: Prisma.SortOrderInput | Prisma.SortOrder
   users?: Prisma.usersOrderByWithRelationInput
 }
 
@@ -253,6 +262,7 @@ export type daily_tasksWhereUniqueInput = Prisma.AtLeast<{
   updated_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
   is_deleted?: Prisma.BoolFilter<"daily_tasks"> | boolean
+  completed_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
   users?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
 }, "id">
 
@@ -267,6 +277,7 @@ export type daily_tasksOrderByWithAggregationInput = {
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
   is_deleted?: Prisma.SortOrder
+  completed_at?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.daily_tasksCountOrderByAggregateInput
   _max?: Prisma.daily_tasksMaxOrderByAggregateInput
   _min?: Prisma.daily_tasksMinOrderByAggregateInput
@@ -286,6 +297,7 @@ export type daily_tasksScalarWhereWithAggregatesInput = {
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"daily_tasks"> | Date | string
   deleted_at?: Prisma.DateTimeNullableWithAggregatesFilter<"daily_tasks"> | Date | string | null
   is_deleted?: Prisma.BoolWithAggregatesFilter<"daily_tasks"> | boolean
+  completed_at?: Prisma.DateTimeNullableWithAggregatesFilter<"daily_tasks"> | Date | string | null
 }
 
 export type daily_tasksCreateInput = {
@@ -298,6 +310,7 @@ export type daily_tasksCreateInput = {
   updated_at?: Date | string
   deleted_at?: Date | string | null
   is_deleted?: boolean
+  completed_at?: Date | string | null
   users: Prisma.usersCreateNestedOneWithoutDaily_tasksInput
 }
 
@@ -312,6 +325,7 @@ export type daily_tasksUncheckedCreateInput = {
   updated_at?: Date | string
   deleted_at?: Date | string | null
   is_deleted?: boolean
+  completed_at?: Date | string | null
 }
 
 export type daily_tasksUpdateInput = {
@@ -324,6 +338,7 @@ export type daily_tasksUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   users?: Prisma.usersUpdateOneRequiredWithoutDaily_tasksNestedInput
 }
 
@@ -338,6 +353,7 @@ export type daily_tasksUncheckedUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type daily_tasksCreateManyInput = {
@@ -351,6 +367,7 @@ export type daily_tasksCreateManyInput = {
   updated_at?: Date | string
   deleted_at?: Date | string | null
   is_deleted?: boolean
+  completed_at?: Date | string | null
 }
 
 export type daily_tasksUpdateManyMutationInput = {
@@ -363,6 +380,7 @@ export type daily_tasksUpdateManyMutationInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type daily_tasksUncheckedUpdateManyInput = {
@@ -376,6 +394,7 @@ export type daily_tasksUncheckedUpdateManyInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type daily_tasksCountOrderByAggregateInput = {
@@ -389,6 +408,7 @@ export type daily_tasksCountOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
   is_deleted?: Prisma.SortOrder
+  completed_at?: Prisma.SortOrder
 }
 
 export type daily_tasksMaxOrderByAggregateInput = {
@@ -402,6 +422,7 @@ export type daily_tasksMaxOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
   is_deleted?: Prisma.SortOrder
+  completed_at?: Prisma.SortOrder
 }
 
 export type daily_tasksMinOrderByAggregateInput = {
@@ -415,6 +436,7 @@ export type daily_tasksMinOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
   deleted_at?: Prisma.SortOrder
   is_deleted?: Prisma.SortOrder
+  completed_at?: Prisma.SortOrder
 }
 
 export type Daily_tasksListRelationFilter = {
@@ -495,6 +517,7 @@ export type daily_tasksCreateWithoutUsersInput = {
   updated_at?: Date | string
   deleted_at?: Date | string | null
   is_deleted?: boolean
+  completed_at?: Date | string | null
 }
 
 export type daily_tasksUncheckedCreateWithoutUsersInput = {
@@ -507,6 +530,7 @@ export type daily_tasksUncheckedCreateWithoutUsersInput = {
   updated_at?: Date | string
   deleted_at?: Date | string | null
   is_deleted?: boolean
+  completed_at?: Date | string | null
 }
 
 export type daily_tasksCreateOrConnectWithoutUsersInput = {
@@ -549,6 +573,7 @@ export type daily_tasksScalarWhereInput = {
   updated_at?: Prisma.DateTimeFilter<"daily_tasks"> | Date | string
   deleted_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
   is_deleted?: Prisma.BoolFilter<"daily_tasks"> | boolean
+  completed_at?: Prisma.DateTimeNullableFilter<"daily_tasks"> | Date | string | null
 }
 
 export type daily_tasksCreateManyUsersInput = {
@@ -561,6 +586,7 @@ export type daily_tasksCreateManyUsersInput = {
   updated_at?: Date | string
   deleted_at?: Date | string | null
   is_deleted?: boolean
+  completed_at?: Date | string | null
 }
 
 export type daily_tasksUpdateWithoutUsersInput = {
@@ -573,6 +599,7 @@ export type daily_tasksUpdateWithoutUsersInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type daily_tasksUncheckedUpdateWithoutUsersInput = {
@@ -585,6 +612,7 @@ export type daily_tasksUncheckedUpdateWithoutUsersInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type daily_tasksUncheckedUpdateManyWithoutUsersInput = {
@@ -597,6 +625,7 @@ export type daily_tasksUncheckedUpdateManyWithoutUsersInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  completed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -612,6 +641,7 @@ export type daily_tasksSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   updated_at?: boolean
   deleted_at?: boolean
   is_deleted?: boolean
+  completed_at?: boolean
   users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["daily_tasks"]>
 
@@ -626,6 +656,7 @@ export type daily_tasksSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   updated_at?: boolean
   deleted_at?: boolean
   is_deleted?: boolean
+  completed_at?: boolean
   users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["daily_tasks"]>
 
@@ -640,6 +671,7 @@ export type daily_tasksSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   updated_at?: boolean
   deleted_at?: boolean
   is_deleted?: boolean
+  completed_at?: boolean
   users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["daily_tasks"]>
 
@@ -654,9 +686,10 @@ export type daily_tasksSelectScalar = {
   updated_at?: boolean
   deleted_at?: boolean
   is_deleted?: boolean
+  completed_at?: boolean
 }
 
-export type daily_tasksOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "task_date" | "is_done" | "is_pinned" | "created_at" | "updated_at" | "deleted_at" | "is_deleted", ExtArgs["result"]["daily_tasks"]>
+export type daily_tasksOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "title" | "task_date" | "is_done" | "is_pinned" | "created_at" | "updated_at" | "deleted_at" | "is_deleted" | "completed_at", ExtArgs["result"]["daily_tasks"]>
 export type daily_tasksInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }
@@ -683,6 +716,7 @@ export type $daily_tasksPayload<ExtArgs extends runtime.Types.Extensions.Interna
     updated_at: Date
     deleted_at: Date | null
     is_deleted: boolean
+    completed_at: Date | null
   }, ExtArgs["result"]["daily_tasks"]>
   composites: {}
 }
@@ -1117,6 +1151,7 @@ export interface daily_tasksFieldRefs {
   readonly updated_at: Prisma.FieldRef<"daily_tasks", 'DateTime'>
   readonly deleted_at: Prisma.FieldRef<"daily_tasks", 'DateTime'>
   readonly is_deleted: Prisma.FieldRef<"daily_tasks", 'Boolean'>
+  readonly completed_at: Prisma.FieldRef<"daily_tasks", 'DateTime'>
 }
     
 

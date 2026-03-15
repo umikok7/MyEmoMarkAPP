@@ -23,6 +23,7 @@ type TaskSelect = {
   task_date: true
   is_done: true
   is_pinned: true
+  completed_at: true
   created_at: true
 }
 
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
         task_date: true,
         is_done: true,
         is_pinned: true,
+        completed_at: true,
         created_at: true,
       },
     })
@@ -84,6 +86,7 @@ export async function GET(request: NextRequest) {
         task_date: true,
         is_done: true,
         is_pinned: true,
+        completed_at: true,
         created_at: true,
       },
     })

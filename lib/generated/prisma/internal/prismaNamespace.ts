@@ -902,7 +902,8 @@ export const Daily_tasksScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   deleted_at: 'deleted_at',
-  is_deleted: 'is_deleted'
+  is_deleted: 'is_deleted',
+  completed_at: 'completed_at'
 } as const
 
 export type Daily_tasksScalarFieldEnum = (typeof Daily_tasksScalarFieldEnum)[keyof typeof Daily_tasksScalarFieldEnum]
