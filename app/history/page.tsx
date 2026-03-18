@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CloudSun, Leaf, Wind, Droplets, Zap, Calendar, ArrowLeft, Heart } from "lucide-react"
+import { CloudSun, Leaf, Wind, Droplets, Zap, Calendar, ArrowLeft, Heart, Pin } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { buildApiUrl } from "@/lib/api"
@@ -32,6 +32,7 @@ interface JournalEntry {
   author_id?: string
   is_mine?: boolean
   liked_by_user_id?: string | null
+  is_pinned?: boolean
 }
 
 type ServerMoodItem = {
@@ -57,6 +58,7 @@ type CoupleMoodItem = {
   created_at: string
   liked_by_user_id?: string | null
   liked_at?: string | null
+  is_pinned?: boolean
 }
 
 type LikeNotification = {
@@ -118,6 +120,7 @@ export default function HistoryPage() {
         author_id: coupleItem.created_by_user_id,
         is_mine: isMine,
         liked_by_user_id: likedBy,
+        is_pinned: coupleItem.is_pinned ?? false,
       }
     }
 
@@ -355,10 +358,26 @@ export default function HistoryPage() {
   }, [loadMore])
 
 
-  // Group entries by date
+  // Separate pinned and unpinned entries (for couple space)
+  const { pinnedEntries, unpinnedEntries } = React.useMemo(() => {
+    const pinned: JournalEntry[] = []
+    const unpinned: JournalEntry[] = []
+    data.forEach((entry) => {
+      if (entry.is_pinned) {
+        pinned.push(entry)
+      } else {
+        unpinned.push(entry)
+      }
+    })
+    return { pinnedEntries: pinned, unpinnedEntries: unpinned }
+  }, [data])
+
+  const [pinnedExpanded, setPinnedExpanded] = React.useState(false)
+
+  // Group unpinned entries by date
   const groupedEntries = React.useMemo(() => {
     const groups: Record<string, JournalEntry[]> = {}
-    data.forEach((entry) => {
+    unpinnedEntries.forEach((entry) => {
       // Simple date formatting for grouping header
       const dateObj = new Date(entry.date)
       // "Jan 24, Wed" format
@@ -369,7 +388,7 @@ export default function HistoryPage() {
       groups[dateKey].push(entry)
     })
     return groups
-  }, [data])
+  }, [unpinnedEntries])
 
   const isChatLayout = currentSpace === "personal" && selectedCoupleSpaceId !== null
 
@@ -460,6 +479,98 @@ export default function HistoryPage() {
         /* Timeline Feed */
         <div className="space-y-10 relative">
           
+          {/* Pinned Cards Stacked Section */}
+          {pinnedEntries.length > 0 && currentSpace === "couple" && (
+            <div className="mb-8 pl-14">
+              <button
+                onClick={() => setPinnedExpanded(!pinnedExpanded)}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-3 rounded-2xl",
+                  "bg-gradient-to-r from-amber-50 to-amber-100/50",
+                  "border border-amber-200/60",
+                  "shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {pinnedEntries.slice(0, 3).map((entry) => {
+                      const config = MOOD_CONFIG[entry.mood]
+                      const Icon = config.icon
+                      return (
+                        <div
+                          key={entry.id}
+                          className={cn(
+                            "w-8 h-8 rounded-xl flex items-center justify-center",
+                            "border-2 border-amber-100 bg-white shadow-sm",
+                          )}
+                        >
+                          <Icon className={cn("w-4 h-4", config.color)} strokeWidth={1.5} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <span className="text-sm font-semibold text-amber-700">
+                    {pinnedEntries.length} 张教训卡片
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-amber-600/70">
+                    {pinnedExpanded ? "收起" : "展开"}
+                  </span>
+                  <Pin className={cn(
+                    "w-4 h-4 text-amber-500 transition-transform duration-300",
+                    pinnedExpanded && "rotate-180"
+                  )} />
+                </div>
+              </button>
+
+              {/* Expanded Content */}
+              <div className={cn(
+                "overflow-hidden transition-all duration-500 ease-out",
+                pinnedExpanded ? "mt-4 max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {/* Group pinned entries by date */}
+                {Object.entries(
+                  pinnedEntries.reduce<Record<string, JournalEntry[]>>((groups, entry) => {
+                    const dateObj = new Date(entry.date)
+                    const dateKey = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" })
+                    if (!groups[dateKey]) {
+                      groups[dateKey] = []
+                    }
+                    groups[dateKey].push(entry)
+                    return groups
+                  }, {})
+                ).map(([dateLabel, entries]) => (
+                  <div key={dateLabel}>
+                    {/* Date Header for pinned section */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center">
+                        <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                      </div>
+                      <span className="text-xs font-semibold text-amber-700 tracking-widest uppercase">{dateLabel}</span>
+                    </div>
+                    <div className="space-y-3 pl-4">
+                      {entries.map((entry) => (
+                        <TimelineCard
+                          key={entry.id}
+                          entry={entry}
+                          showAuthor={false}
+                          chatLayout={false}
+                          currentSpace={currentSpace}
+                          onPinned={(id, isPinned) => {
+                            setData((prev) => prev.map((item) =>
+                              item.id === id ? { ...item, is_pinned: isPinned } : item
+                            ))
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Vertical Line Decoration — hidden in chat layout */}
           {!isChatLayout && (
             <div className="absolute left-[19px] top-2 bottom-0 w-[1px] bg-gradient-to-b from-muted-foreground/20 via-muted-foreground/10 to-transparent z-0" />
@@ -504,6 +615,11 @@ export default function HistoryPage() {
                         if (!deletedId) return
                         setData((prev) => prev.filter((item) => item.id !== deletedId))
                       }}
+                      onPinned={(id, isPinned) => {
+                        setData((prev) => prev.map((item) =>
+                          item.id === id ? { ...item, is_pinned: isPinned } : item
+                        ))
+                      }}
                     />
                 ))}
               </div>
@@ -547,6 +663,7 @@ function TimelineCard({
   entry,
   onUpdated,
   onDeleted,
+  onPinned,
   showAuthor,
   chatLayout,
   currentSpace,
@@ -554,6 +671,7 @@ function TimelineCard({
   entry: JournalEntry
   onUpdated?: (record: ServerMoodItem) => void
   onDeleted?: (deletedId: string) => void
+  onPinned?: (id: string, isPinned: boolean) => void
   showAuthor?: boolean
   chatLayout?: boolean
   currentSpace?: "personal" | "couple"
@@ -568,6 +686,8 @@ function TimelineCard({
   const [isDeleting, setIsDeleting] = React.useState(false)
   const [isLiked, setIsLiked] = React.useState(!!entry.liked_by_user_id)
   const [isLikeAnimating, setIsLikeAnimating] = React.useState(false)
+  const [isPinned, setIsPinned] = React.useState(entry.is_pinned ?? false)
+  const [isPinning, setIsPinning] = React.useState(false)
   const config = MOOD_CONFIG[entry.mood]
   const Icon = config.icon
 
@@ -636,6 +756,49 @@ function TimelineCard({
       })
   }, [canLike, isLiked, currentSpace, entry.id])
 
+  const canPin = currentSpace === "couple" && entry.is_mine === true
+
+  const handlePin = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+
+    if (!canPin || isPinning) return
+
+    if (navigator.vibrate) {
+      navigator.vibrate(8)
+    }
+
+    const newPinnedState = !isPinned
+    setIsPinning(true)
+    setIsPinned(newPinnedState)
+
+    const apiEndpoint = buildApiUrl(`/couple-moods/${entry.id}/pin`)
+
+    fetch(apiEndpoint, {
+      method: "PATCH",
+      credentials: "include",
+    })
+      .then((res) => {
+        if (!res.ok) {
+          setIsPinned(!newPinnedState)
+          throw new Error("Failed to update pin")
+        }
+        return res.json()
+      })
+      .then((json) => {
+        setIsPinning(false)
+        onPinned?.(entry.id, json.data.is_pinned)
+      })
+      .catch((error) => {
+        console.error("Pin error:", error)
+        setIsPinned(!newPinnedState)
+        setIsPinning(false)
+        toast("Could not update", {
+          description: "Please try again.",
+          duration: 2000,
+        })
+      })
+  }, [canPin, isPinned, isPinning, entry.id, onPinned])
+
   const card = (
     <Card 
       onClick={() => {
@@ -646,7 +809,13 @@ function TimelineCard({
         "border-none transition-all duration-500 cursor-pointer overflow-hidden",
         isExpanded ? "bg-white shadow-md ring-1 ring-black/5" : "bg-white/60 hover:bg-white/80 shadow-sm",
         // Faint rose tint for partner card
-        chatLayout && isPartnerCard && "bg-rose-50/30 hover:bg-rose-50/50"
+        chatLayout && isPartnerCard && "bg-rose-50/30 hover:bg-rose-50/50",
+        // Pinned card: important/warning style
+        isPinned && [
+          "border-l-4 border-l-amber-500",
+          "bg-gradient-to-r from-amber-50/50 to-white/60",
+          "shadow-md hover:shadow-lg",
+        ]
       )}
     >
       <div className={cn(
@@ -676,6 +845,26 @@ function TimelineCard({
             )}>
               <AuthorBadge isMine={entry.is_mine} />
               <span className={cn("font-mono", chatLayout ? "text-sm font-semibold text-muted-foreground/60" : "text-[11px] text-muted-foreground/45")}>{entry.time}</span>
+              {isPinned && canPin && (
+                <button
+                  onClick={handlePin}
+                  className="p-1 rounded-md hover:bg-amber-100/50 transition-colors cursor-pointer"
+                  title="Unpin"
+                  disabled={isPinning}
+                >
+                  <Pin className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                </button>
+              )}
+              {canPin && !isPinned && (
+                <button
+                  onClick={handlePin}
+                  className="p-1 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
+                  title="Pin to top"
+                  disabled={isPinning}
+                >
+                  <Pin className="w-3.5 h-3.5 text-muted-foreground/40" />
+                </button>
+              )}
               {isLiked && (
                 <span className="flex items-center" title="Seen by partner">
                   <Heart className="w-3.5 h-3.5 text-rose-400/60 fill-rose-400/15" />
@@ -687,6 +876,26 @@ function TimelineCard({
               <h3 className={cn("text-base font-bold tracking-wide", config.color)}>{config.label}</h3>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold font-mono text-muted-foreground/65">{entry.time}</span>
+                {isPinned && canPin && (
+                  <button
+                    onClick={handlePin}
+                    className="p-1 rounded-md hover:bg-amber-100/50 transition-colors cursor-pointer"
+                    title="Unpin"
+                    disabled={isPinning}
+                  >
+                    <Pin className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                  </button>
+                )}
+                {canPin && !isPinned && (
+                  <button
+                    onClick={handlePin}
+                    className="p-1 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
+                    title="Pin to top"
+                    disabled={isPinning}
+                  >
+                    <Pin className="w-3.5 h-3.5 text-muted-foreground/40" />
+                  </button>
+                )}
                 {isLiked && (
                   <span className="flex items-center" title="Seen by partner">
                     <Heart className="w-3.5 h-3.5 text-rose-400/60 fill-rose-400/15" />

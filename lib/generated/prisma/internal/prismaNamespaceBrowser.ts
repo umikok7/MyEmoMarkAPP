@@ -158,6 +158,7 @@ export const Couple_mood_recordsScalarFieldEnum = {
   note: 'note',
   tags: 'tags',
   liked_by_user_id: 'liked_by_user_id',
+  is_pinned: 'is_pinned',
   liked_at: 'liked_at',
   created_at: 'created_at',
   updated_at: 'updated_at',

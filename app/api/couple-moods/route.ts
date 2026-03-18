@@ -60,7 +60,10 @@ export async function GET(request: NextRequest) {
       is_deleted: false,
       space_id: spaceId,
     },
-    orderBy: { created_at: "desc" },
+    orderBy: [
+      { is_pinned: "desc" },
+      { created_at: "desc" },
+    ],
     take: limit,
     skip: offset,
   })
@@ -75,6 +78,7 @@ export async function GET(request: NextRequest) {
     tags: row.tags ? (Array.isArray(row.tags) ? row.tags : []) : [],
     created_at: row.created_at,
     liked_by_user_id: row.liked_by_user_id,
+    is_pinned: row.is_pinned,
   }))
 
   return ok({ items })
