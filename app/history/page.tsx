@@ -324,7 +324,12 @@ export default function HistoryPage() {
         likedAt: item.liked_at,
       }))
       setNotifications(mapped)
-      const hasUnread = json?.data?.hasUnread ?? false
+      const lastOpened = localStorage.getItem("lastOpenedNotificationsAt")
+      const lastOpenedTime = lastOpened ? new Date(lastOpened).getTime() : 0
+      const hasUnread = items.some((item) => {
+        if (!item.liked_at) return false
+        return new Date(item.liked_at).getTime() > lastOpenedTime
+      })
       setHasUnreadLikes(hasUnread)
     } catch (error) {
       console.error("Failed to fetch like notifications:", error)
@@ -332,10 +337,9 @@ export default function HistoryPage() {
   }, [userId])
 
   const handleOpenNotifications = React.useCallback(() => {
-    if (hasUnreadLikes) {
-      setHasUnreadLikes(false)
-    }
-  }, [hasUnreadLikes])
+    localStorage.setItem("lastOpenedNotificationsAt", new Date().toISOString())
+    setHasUnreadLikes(false)
+  }, [])
 
   React.useEffect(() => {
     if (userId && userId !== "guest") {
