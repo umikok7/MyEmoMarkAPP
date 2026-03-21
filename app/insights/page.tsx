@@ -2,17 +2,26 @@
 
 import * as React from "react"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Sparkles, X } from "lucide-react"
 import Link from "next/link"
-import ReactECharts from 'echarts-for-react';
+import ReactECharts from "echarts-for-react"
 import { Button } from "@/components/ui/button"
 import { buildApiUrl } from "@/lib/api"
+import { cn } from "@/lib/utils"
+import anniversariesData from "@/data/anniversaries.json"
 
 type CalendarDay = {
   date: number | null
   dateString: string | null
   taskCount: number
   taskCompleted: number
+}
+
+type AnniversaryItem = {
+  date: string
+  title: string
+  subtitle: string
+  description: string
 }
 
 // Muji风格热力图颜色配置
@@ -39,6 +48,15 @@ type DonutData = {
   color: string
 }
 
+const ANNIVERSARIES = anniversariesData as AnniversaryItem[]
+
+const formatAnniversaryDate = (dateString: string) =>
+  new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(`${dateString}T00:00:00`))
+
 export default function InsightsPage() {
   const [loading, setLoading] = React.useState(true)
   const [calendar, setCalendar] = React.useState<CalendarDay[]>([])
@@ -46,6 +64,7 @@ export default function InsightsPage() {
   const [suggestion, setSuggestion] = React.useState("")
   const [monthLabel, setMonthLabel] = React.useState("")
   const [userId, setUserId] = React.useState<string | null>(null)
+  const [selectedAnniversary, setSelectedAnniversary] = React.useState<AnniversaryItem | null>(null)
 
   // Month navigation state
   const [selectedDate, setSelectedDate] = React.useState(new Date())
@@ -152,6 +171,26 @@ export default function InsightsPage() {
 
     return () => abortController.abort()
   }, [selectedDate, userId])
+
+  React.useEffect(() => {
+    if (!selectedAnniversary) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedAnniversary(null)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [selectedAnniversary])
   
   const goToPreviousMonth = () => {
     setLoading(true)
@@ -187,54 +226,61 @@ export default function InsightsPage() {
            selectedDate.getMonth() === today.getMonth()
   }
   
+  const anniversaryMap = React.useMemo(() => {
+    return ANNIVERSARIES.reduce<Record<string, AnniversaryItem>>((acc, item) => {
+      acc[item.date] = item
+      return acc
+    }, {})
+  }, [])
+
   // Donut chart configuration
   const donutOption = {
     tooltip: {
-      trigger: 'item',
-      formatter: '{b}: {c} ({d}%)',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderColor: '#f0ebe6',
+      trigger: "item",
+      formatter: "{b}: {c} ({d}%)",
+      backgroundColor: "rgba(255, 255, 255, 0.95)",
+      borderColor: "#f0ebe6",
       borderWidth: 1,
       textStyle: {
-        color: '#5c5c5c',
-        fontSize: 12
-      }
+        color: "#5c5c5c",
+        fontSize: 12,
+      },
     },
     legend: {
-      show: false
+      show: false,
     },
     series: [
       {
-        name: 'Moods',
-        type: 'pie',
-        radius: ['55%', '85%'],
+        name: "Moods",
+        type: "pie",
+        radius: ["55%", "85%"],
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 8,
-          borderColor: '#fffdfa',
-          borderWidth: 3
+          borderColor: "#fffdfa",
+          borderWidth: 3,
         },
         label: {
-          show: false
+          show: false,
         },
         emphasis: {
           scale: false,
           label: {
             show: true,
             fontSize: 14,
-            fontWeight: 'normal',
-            color: '#5c5c5c'
-          }
+            fontWeight: "normal",
+            color: "#5c5c5c",
+          },
         },
         labelLine: {
-          show: false
+          show: false,
         },
-        data: donutData
-      }
-    ]
-  };
+        data: donutData,
+      },
+    ],
+  }
 
-  const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+  const weekDays = ["S", "M", "T", "W", "T", "F", "S"]
 
   return (
     <div className="min-h-screen bg-[#f5f1ed] pb-32">
@@ -318,6 +364,8 @@ export default function InsightsPage() {
                   {calendar.map((day, idx) => {
                     const heatmapLevel = getHeatmapLevel(day.taskCompleted, day.taskCount)
                     const heatmapColor = HEATMAP_COLORS[heatmapLevel]
+                    const anniversary = day.dateString ? anniversaryMap[day.dateString] : undefined
+                    const isAnniversary = Boolean(anniversary)
 
                     return (
                       <div
@@ -325,28 +373,54 @@ export default function InsightsPage() {
                         className="aspect-square flex items-center justify-center relative"
                       >
                         {day.date ? (
-                          <div className="w-full h-full flex items-center justify-center rounded-lg relative">
-                            {/* 热力图背景 - 有任务记录时显示 */}
-                            {day.taskCount > 0 && (
-                              <div
-                                className={`absolute inset-0 rounded-lg transition-all duration-300 ${heatmapColor.bg} ${heatmapColor.border}`}
-                              />
-                            )}
+                          isAnniversary ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAnniversary(anniversary ?? null)}
+                              className={cn(
+                                "group w-full h-full rounded-lg relative overflow-hidden",
+                                "transition-all duration-300 ease-out",
+                                "hover:scale-[1.03] active:scale-[0.98]"
+                              )}
+                              aria-label={`Open anniversary for ${formatAnniversaryDate(day.dateString ?? "")}`}
+                            >
+                              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#fff8f6] via-[#f9e6e2] to-[#f3d4d0]" />
+                              <div className="absolute inset-0 rounded-lg border border-[#ebc5c7] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.9),transparent_58%)]" />
+                              <div className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-[#fff5f3] blur-sm transition-transform duration-300 group-hover:scale-125" />
 
-                            {/* 日期数字 */}
-                            <span className={`relative z-10 text-xs ${
-                              day.taskCount > 0
-                                ? 'text-foreground/80 font-medium'
-                                : 'text-muted-foreground/30 font-light'
-                            }`}>
-                              {day.date}
-                            </span>
+                              <span className="relative z-10 flex h-full items-center justify-center text-xs font-semibold text-[#8f4d59]">
+                                {day.date}
+                              </span>
 
-                            {/* 完成度指示点 */}
-                            {day.taskCount > 0 && (
-                              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-current opacity-60" />
-                            )}
-                          </div>
+                              <Heart className="absolute right-1 top-1 h-2.5 w-2.5 fill-current text-[#c98793] transition-transform duration-300 group-hover:scale-110" />
+                              <Sparkles className="absolute bottom-1 right-1 h-2.5 w-2.5 text-[#d59ba3] transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+                            </button>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center rounded-lg relative">
+                              {/* 热力图背景 - 有任务记录时显示 */}
+                              {day.taskCount > 0 && (
+                                <div
+                                  className={`absolute inset-0 rounded-lg transition-all duration-300 ${heatmapColor.bg} ${heatmapColor.border}`}
+                                />
+                              )}
+
+                              {/* 日期数字 */}
+                              <span
+                                className={`relative z-10 text-xs ${
+                                  day.taskCount > 0
+                                    ? "text-foreground/80 font-medium"
+                                    : "text-muted-foreground/30 font-light"
+                                }`}
+                              >
+                                {day.date}
+                              </span>
+
+                              {/* 完成度指示点 */}
+                              {day.taskCount > 0 && (
+                                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-current opacity-60" />
+                              )}
+                            </div>
+                          )
                         ) : (
                           <span className="text-xs text-transparent">.</span>
                         )}
@@ -390,8 +464,8 @@ export default function InsightsPage() {
                 ) : (
                   <ReactECharts 
                     option={donutOption} 
-                    style={{ height: '100%', width: '100%' }}
-                    opts={{ renderer: 'svg' }}
+                    style={{ height: "100%", width: "100%" }}
+                    opts={{ renderer: "svg" }}
                   />
                 )}
               </div>
@@ -435,6 +509,68 @@ export default function InsightsPage() {
 
         </div>
       </div>
-    </div>
+
+      {selectedAnniversary && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center px-5 py-10"
+          onClick={() => setSelectedAnniversary(null)}
+        >
+          <div className="absolute inset-0 bg-[#6f5158]/15 backdrop-blur-md" />
+
+          <div
+            className={cn(
+              "relative w-full max-w-sm overflow-hidden rounded-[32px]",
+              "bg-gradient-to-br from-[#fffdfa] via-[#fff7f2] to-[#fbe8e3]",
+              "border border-white/70 shadow-[0_28px_80px_-28px_rgba(98,56,63,0.5)]",
+              "px-6 pb-6 pt-7 animate-[fadeScale_0.24s_ease-out]"
+            )}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="absolute inset-x-10 top-0 h-24 rounded-full bg-[#ffd9d2]/35 blur-2xl" />
+            <div className="absolute right-5 top-5 z-20">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setSelectedAnniversary(null)
+                }}
+                aria-label="Close anniversary details"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/75 text-[#9d6d75] shadow-sm transition-colors hover:bg-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-[10px] uppercase tracking-[0.28em] text-[#b57984] shadow-sm">
+                <Heart className="h-3.5 w-3.5 fill-current" />
+                纪念日
+              </div>
+
+              <div className="mt-5 rounded-[28px] bg-white/72 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-white/70">
+                <p className="text-xs tracking-[0.2em] text-[#c1979d]">
+                  {formatAnniversaryDate(selectedAnniversary.date)}
+                </p>
+                <h3 className="mt-3 text-[28px] leading-[1.15] text-[#7d4a53]" style={{ fontFamily: "Georgia, serif" }}>
+                  {selectedAnniversary.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-[#9f737a]">
+                  {selectedAnniversary.subtitle}
+                </p>
+                <div className="mt-5 h-px bg-gradient-to-r from-transparent via-[#e9cfc9] to-transparent" />
+                <p className="mt-5 text-sm leading-7 text-[#6b5a5e]">
+                  {selectedAnniversary.description}
+                </p>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between px-1 text-[11px] tracking-[0.18em] text-[#b79097]">
+                <span>have a nice day!</span>
+                <Sparkles className="h-3.5 w-3.5" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+     </div>
   )
 }
