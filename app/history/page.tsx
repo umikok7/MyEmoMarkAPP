@@ -362,21 +362,31 @@ export default function HistoryPage() {
   }, [loadMore])
 
 
-  // Separate pinned and unpinned entries (for couple space)
-  const { pinnedEntries, unpinnedEntries } = React.useMemo(() => {
-    const pinned: JournalEntry[] = []
+  // Separate pinned entries by mood type: Heat (angry) goes to lesson cards, others to education cards
+  const { lessonPinnedEntries, educationPinnedEntries, unpinnedEntries } = React.useMemo(() => {
+    const lessonPinned: JournalEntry[] = []
+    const educationPinned: JournalEntry[] = []
     const unpinned: JournalEntry[] = []
     data.forEach((entry) => {
       if (entry.is_pinned) {
-        pinned.push(entry)
+        if (entry.mood === "angry") {
+          lessonPinned.push(entry)
+        } else {
+          educationPinned.push(entry)
+        }
       } else {
         unpinned.push(entry)
       }
     })
-    return { pinnedEntries: pinned, unpinnedEntries: unpinned }
+    return { 
+      lessonPinnedEntries: lessonPinned, 
+      educationPinnedEntries: educationPinned,
+      unpinnedEntries: unpinned 
+    }
   }, [data])
 
-  const [pinnedExpanded, setPinnedExpanded] = React.useState(false)
+  const [lessonPinnedExpanded, setLessonPinnedExpanded] = React.useState(false)
+  const [educationPinnedExpanded, setEducationPinnedExpanded] = React.useState(false)
 
   // Group unpinned entries by date
   const groupedEntries = React.useMemo(() => {
@@ -483,11 +493,11 @@ export default function HistoryPage() {
         /* Timeline Feed */
         <div className="space-y-10 relative">
           
-          {/* Pinned Cards Stacked Section */}
-          {pinnedEntries.length > 0 && currentSpace === "couple" && (
+          {/* Pinned Cards Stacked Section - Lesson Cards (Heat/angry) */}
+          {lessonPinnedEntries.length > 0 && currentSpace === "couple" && (
             <div className="mb-8 pl-14">
               <button
-                onClick={() => setPinnedExpanded(!pinnedExpanded)}
+                onClick={() => setLessonPinnedExpanded(!lessonPinnedExpanded)}
                 className={cn(
                   "w-full flex items-center justify-between px-4 py-3 rounded-2xl",
                   "bg-gradient-to-r from-amber-50 to-amber-100/50",
@@ -497,7 +507,7 @@ export default function HistoryPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-2">
-                    {pinnedEntries.slice(0, 3).map((entry) => {
+                    {lessonPinnedEntries.slice(0, 3).map((entry) => {
                       const config = MOOD_CONFIG[entry.mood]
                       const Icon = config.icon
                       return (
@@ -514,28 +524,28 @@ export default function HistoryPage() {
                     })}
                   </div>
                   <span className="text-sm font-semibold text-amber-700">
-                    {pinnedEntries.length} 张教训卡片
+                    {lessonPinnedEntries.length} 张教训卡片
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-amber-600/70">
-                    {pinnedExpanded ? "收起" : "展开"}
+                    {lessonPinnedExpanded ? "收起" : "展开"}
                   </span>
                   <Pin className={cn(
                     "w-4 h-4 text-amber-500 transition-transform duration-300",
-                    pinnedExpanded && "rotate-180"
+                    lessonPinnedExpanded && "rotate-180"
                   )} />
                 </div>
               </button>
 
-              {/* Expanded Content */}
+              {/* Expanded Content - Lesson Cards */}
               <div className={cn(
                 "overflow-hidden transition-all duration-500 ease-out",
-                pinnedExpanded ? "mt-4 max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                lessonPinnedExpanded ? "mt-4 max-h-[600px] opacity-100" : "max-h-0 opacity-0"
               )}>
                 {/* Group pinned entries by date */}
                 {Object.entries(
-                  pinnedEntries.reduce<Record<string, JournalEntry[]>>((groups, entry) => {
+                  lessonPinnedEntries.reduce<Record<string, JournalEntry[]>>((groups, entry) => {
                     const dateObj = new Date(entry.date)
                     const dateKey = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" })
                     if (!groups[dateKey]) {
@@ -552,6 +562,98 @@ export default function HistoryPage() {
                         <Calendar className="w-3.5 h-3.5 text-amber-600" />
                       </div>
                       <span className="text-xs font-semibold text-amber-700 tracking-widest uppercase">{dateLabel}</span>
+                    </div>
+                    <div className="space-y-3 pl-4">
+                      {entries.map((entry) => (
+                        <TimelineCard
+                          key={entry.id}
+                          entry={entry}
+                          showAuthor={false}
+                          chatLayout={false}
+                          currentSpace={currentSpace}
+                          onPinned={(id, isPinned) => {
+                            setData((prev) => prev.map((item) =>
+                              item.id === id ? { ...item, is_pinned: isPinned } : item
+                            ))
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pinned Cards Stacked Section - Education Cards (non-Heat) */}
+          {educationPinnedEntries.length > 0 && currentSpace === "couple" && (
+            <div className="mb-8 pl-14">
+              <button
+                onClick={() => setEducationPinnedExpanded(!educationPinnedExpanded)}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-3 rounded-2xl",
+                  "bg-gradient-to-r from-indigo-50 to-indigo-100/50",
+                  "border border-indigo-200/60",
+                  "shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {educationPinnedEntries.slice(0, 3).map((entry) => {
+                      const config = MOOD_CONFIG[entry.mood]
+                      const Icon = config.icon
+                      return (
+                        <div
+                          key={entry.id}
+                          className={cn(
+                            "w-8 h-8 rounded-xl flex items-center justify-center",
+                            "border-2 border-indigo-100 bg-white shadow-sm",
+                          )}
+                        >
+                          <Icon className={cn("w-4 h-4", config.color)} strokeWidth={1.5} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <span className="text-sm font-semibold text-indigo-700">
+                    {educationPinnedEntries.length} 张教育卡片
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-indigo-600/70">
+                    {educationPinnedExpanded ? "收起" : "展开"}
+                  </span>
+                  <Pin className={cn(
+                    "w-4 h-4 text-indigo-500 transition-transform duration-300",
+                    educationPinnedExpanded && "rotate-180"
+                  )} />
+                </div>
+              </button>
+
+              {/* Expanded Content - Education Cards */}
+              <div className={cn(
+                "overflow-hidden transition-all duration-500 ease-out",
+                educationPinnedExpanded ? "mt-4 max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {/* Group pinned entries by date */}
+                {Object.entries(
+                  educationPinnedEntries.reduce<Record<string, JournalEntry[]>>((groups, entry) => {
+                    const dateObj = new Date(entry.date)
+                    const dateKey = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" })
+                    if (!groups[dateKey]) {
+                      groups[dateKey] = []
+                    }
+                    groups[dateKey].push(entry)
+                    return groups
+                  }, {})
+                ).map(([dateLabel, entries]) => (
+                  <div key={dateLabel}>
+                    {/* Date Header for pinned section */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center">
+                        <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                      </div>
+                      <span className="text-xs font-semibold text-indigo-700 tracking-widest uppercase">{dateLabel}</span>
                     </div>
                     <div className="space-y-3 pl-4">
                       {entries.map((entry) => (
