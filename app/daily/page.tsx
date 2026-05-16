@@ -328,27 +328,27 @@ export default function DailyPage() {
     items.map((block, index) => {
       const theme = colorThemes[index % colorThemes.length]
       const top = (block.start_minute - DAY_START_MINUTES) * pixelsPerMinute
-      const height = Math.max((block.end_minute - block.start_minute) * pixelsPerMinute, 28)
+      const height = Math.max((block.end_minute - block.start_minute) * pixelsPerMinute, 32)
       return (
         <div
           key={block.id}
           className={cn(
-            "absolute left-3 right-3 rounded-2xl border px-3 py-2 text-xs shadow-sm",
+            "absolute left-1 right-1 rounded-lg border px-2 py-1.5 text-xs",
             theme.bg,
             theme.border,
             theme.text,
-            isPartner && "opacity-70"
+            isPartner && "opacity-60"
           )}
           style={{ top, height }}
         >
-          <div className="flex items-center justify-between">
-            <span className="font-semibold truncate">{block.title}</span>
-            <span className="text-[10px] opacity-70">
+          <div className="flex items-center justify-between gap-1">
+            <span className="font-medium truncate">{block.title}</span>
+            <span className="text-[9px] opacity-60 shrink-0">
               {formatMinuteLabel(block.start_minute)}
             </span>
           </div>
           {block.note ? (
-            <p className="mt-1 line-clamp-2 text-[10px] opacity-80">{block.note}</p>
+            <p className="mt-0.5 line-clamp-2 text-[9px] opacity-70">{block.note}</p>
           ) : null}
         </div>
       )
@@ -356,13 +356,13 @@ export default function DailyPage() {
 
   const selectionOverlay = draftRange && (isSelectingRef.current || isEditorOpen) && (
     <div
-      className="absolute left-3 right-3 rounded-2xl border border-dashed border-stone-400 bg-white/60"
+      className="absolute left-1 right-1 rounded-lg border border-dashed border-stone-400 bg-white/50"
       style={{
         top: (draftRange.start - DAY_START_MINUTES) * pixelsPerMinute,
-        height: Math.max((draftRange.end - draftRange.start) * pixelsPerMinute, 28),
+        height: Math.max((draftRange.end - draftRange.start) * pixelsPerMinute, 32),
       }}
     >
-      <div className="p-2 text-[10px] text-stone-500">
+      <div className="px-2 py-1 text-[9px] text-stone-500">
         {formatMinuteLabel(draftRange.start)} - {formatMinuteLabel(draftRange.end)}
       </div>
     </div>
@@ -409,15 +409,36 @@ export default function DailyPage() {
         </header>
 
         <section className="px-5 pt-6">
-          <div className="grid grid-cols-[48px_1fr_1fr] gap-3">
-            <div className="relative text-[10px] text-stone-400" style={{ height: gridHeight }}>
+          {/* Header row */}
+          <div className="grid grid-cols-[25px_1fr_1fr] gap-1 mb-2">
+            <div />
+            <div className="flex items-center gap-2 pl-1">
+              <span className="w-5 h-5 rounded-full bg-white shadow-sm flex items-center justify-center">
+                <User className="w-3 h-3 text-stone-500" />
+              </span>
+              <span className="text-xs font-semibold text-stone-600 uppercase tracking-[0.2em]">我的</span>
+            </div>
+            <div className={cn("flex items-center gap-2 pl-1", viewMode === "me" && "opacity-50")}>
+              <span className="w-5 h-5 rounded-full bg-white shadow-sm flex items-center justify-center">
+                <User className="w-3 h-3 text-stone-500" />
+              </span>
+              <span className="text-xs font-semibold text-stone-600 uppercase tracking-[0.2em]">对方</span>
+            </div>
+          </div>
+
+          {/* Time axis + Grids row */}
+          <div className="grid grid-cols-[25px_1fr_1fr] gap-1">
+            <div
+              className="relative text-[10px] text-stone-400"
+              style={{ height: gridHeight }}
+            >
               {Array.from({ length: 20 }).map((_, index) => {
                 const hour = 5 + index
                 const top = (hour * 60 - DAY_START_MINUTES) * pixelsPerMinute
                 return (
                   <div
                     key={`hour-${hour}`}
-                    className="absolute left-0"
+                    className="absolute left-0 leading-none"
                     style={{ top }}
                   >
                     {String(hour).padStart(2, "0")}
@@ -426,80 +447,52 @@ export default function DailyPage() {
               })}
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 text-stone-500" />
-                  </span>
-                  <span className="text-xs font-semibold text-stone-600 uppercase tracking-[0.2em]">
-                    Me
-                  </span>
+            <div
+              ref={gridRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerCancel}
+              className="relative rounded-xl bg-white/80 border border-black/[0.04] shadow-[0_6px_18px_rgba(0,0,0,0.06)] overflow-hidden"
+              style={{
+                height: gridHeight,
+                backgroundImage:
+                  "linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)",
+                backgroundSize: `${HOUR_HEIGHT}px ${HOUR_HEIGHT}px, ${HOUR_HEIGHT / 2}px ${HOUR_HEIGHT / 2}px`,
+                backgroundPosition: `0 0, 0 0`,
+              }}
+            >
+              {isLoading ? (
+                <div className="absolute inset-0 flex items-center justify-center text-xs text-stone-400">
+                  Loading...
                 </div>
-                <span className="text-[10px] text-stone-400 uppercase tracking-[0.2em]">Editable</span>
-              </div>
-              <div
-                ref={gridRef}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerCancel}
-                className="relative rounded-3xl bg-white/80 border border-black/[0.04] shadow-[0_6px_18px_rgba(0,0,0,0.06)] overflow-hidden"
-                style={{
-                  height: gridHeight,
-                  backgroundImage:
-                    "linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)",
-                  backgroundSize: `${HOUR_HEIGHT}px ${HOUR_HEIGHT}px, ${HOUR_HEIGHT / 2}px ${HOUR_HEIGHT / 2}px`,
-                }}
-              >
-                {isLoading ? (
-                  <div className="absolute inset-0 flex items-center justify-center text-xs text-stone-400">
-                    Loading...
-                  </div>
-                ) : blocks.length === 0 ? (
-                  <div className="absolute inset-0 flex items-center justify-center text-xs text-stone-400"></div>
-                ) : null}
-                {renderBlocks(blocks)}
-                {selectionOverlay}
-              </div>
+              ) : blocks.length === 0 ? (
+                <div className="absolute inset-0" />
+              ) : null}
+              {renderBlocks(blocks)}
+              {selectionOverlay}
             </div>
 
-            <div className={cn("space-y-2", viewMode === "me" && "opacity-50")}>
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 text-stone-500" />
-                  </span>
-                  <span className="text-xs font-semibold text-stone-600 uppercase tracking-[0.2em]">
-                    Partner
-                  </span>
-                </div>
-                <span className="inline-flex items-center gap-1 text-[10px] text-stone-400 uppercase tracking-[0.2em]">
-                  <Lock className="w-3 h-3" />
-                  Locked
-                </span>
-              </div>
-              <div
-                className="relative rounded-3xl bg-white/70 border border-black/[0.04] shadow-[0_6px_18px_rgba(0,0,0,0.05)] overflow-hidden pointer-events-none"
-                style={{
-                  height: gridHeight,
-                  backgroundImage:
-                    "linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)",
-                  backgroundSize: `${HOUR_HEIGHT}px ${HOUR_HEIGHT}px, ${HOUR_HEIGHT / 2}px ${HOUR_HEIGHT / 2}px`,
-                }}
-              >
-                {partnerBlocks.length === 0 ? (
-                  <div className="absolute inset-0 flex items-center justify-center text-xs text-stone-400"></div>
-                ) : null}
-                {renderBlocks(partnerBlocks, true)}
-              </div>
+            <div className={cn("relative rounded-xl bg-white/70 border border-black/[0.04] shadow-[0_6px_18px_rgba(0,0,0,0.05)] overflow-hidden pointer-events-none", viewMode === "me" && "opacity-50")}
+              style={{
+                height: gridHeight,
+                backgroundImage:
+                  "linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)",
+                backgroundSize: `${HOUR_HEIGHT}px ${HOUR_HEIGHT}px, ${HOUR_HEIGHT / 2}px ${HOUR_HEIGHT / 2}px`,
+                backgroundPosition: `0 0, 0 0`,
+              }}
+            >
+              {partnerBlocks.length === 0 ? (
+                <div className="absolute inset-0" />
+              ) : null}
+              {renderBlocks(partnerBlocks, true)}
             </div>
           </div>
         </section>
       </main>
 
       {isEditorOpen && draftRange ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20">
+        <div className="fixed inset-x-0 top-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-50 flex items-end justify-center bg-black/20">
           <div className="w-full max-w-md rounded-t-3xl bg-white px-6 py-5 shadow-[0_-10px_30px_rgba(0,0,0,0.15)]">
             <div className="flex items-center justify-between">
               <div>
@@ -520,12 +513,12 @@ export default function DailyPage() {
               <Input
                 value={draftTitle}
                 onChange={(event) => setDraftTitle(event.target.value)}
-                placeholder="What are you planning?"
+                placeholder="写下你的计划..."
               />
               <Textarea
                 value={draftNote}
                 onChange={(event) => setDraftNote(event.target.value)}
-                placeholder="Notes (optional)"
+                placeholder="备注"
                 className="min-h-[90px]"
               />
               <div className="flex gap-2">
@@ -536,7 +529,7 @@ export default function DailyPage() {
                   onClick={closeEditor}
                   disabled={isSaving}
                 >
-                  Cancel
+                  取消
                 </Button>
                 <Button
                   type="button"
@@ -544,7 +537,7 @@ export default function DailyPage() {
                   onClick={handleSaveBlock}
                   disabled={isSaving}
                 >
-                  {isSaving ? "Saving..." : "Save"}
+                  {isSaving ? "保存中..." : "保存"}
                 </Button>
               </div>
             </div>
