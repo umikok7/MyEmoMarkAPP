@@ -6,11 +6,13 @@ import { CloudSun, Leaf, Wind, Droplets, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { buildApiUrl } from "@/lib/api"
+import { formatDateLabel, toDateKey } from "@/lib/date"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { OnboardingGuide } from "@/components/onboarding-guide"
 import { SwipeableTodoItem } from "@/components/SwipeableTodoItem"
 import { MoodSpaceSelector, useMoodSpaceSelector } from "@/components/mood-space-selector"
+import { DayStrip } from "@/components/day-strip"
 import { ChevronDown, ListTodo, Plus, Pin, CheckCircle2 } from "lucide-react"
 
 const ModuleCard = ({
@@ -164,30 +166,6 @@ const MOODS: Array<{
 	},
 ]
 
-const DATE_RANGE_DAYS = 21
-
-const toDateKey = (date: Date) => date.toLocaleDateString("en-CA")
-
-const startOfWeek = (date: Date) => {
-	const target = new Date(date)
-	const day = target.getDay()
-	const diff = (day + 6) % 7
-	target.setDate(target.getDate() - diff)
-	target.setHours(0, 0, 0, 0)
-	return target
-}
-
-const addDays = (date: Date, amount: number) => {
-	const next = new Date(date)
-	next.setDate(next.getDate() + amount)
-	return next
-}
-
-const formatDateLabel = (date: Date) =>
-	date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" })
-
-const isSameDay = (a: Date, b: Date) => toDateKey(a) === toDateKey(b)
-
 const getMoodMeta = (mood?: MoodType | null) => MOODS.find((item) => item.id === mood)
 
 export default function Home() {
@@ -212,7 +190,6 @@ export default function Home() {
 	const [isMoodExpanded, setIsMoodExpanded] = React.useState(false)
 	const [tasksFilter, setTasksFilter] = React.useState<"all" | "pinned" | "normal" | "done" | null>(null)
 	const loginButtonRef = React.useRef<HTMLAnchorElement | null>(null)
-	const dateScrollRef = React.useRef<HTMLDivElement | null>(null)
 	const noteOpenBeforeMoodRef = React.useRef(false)
 	const addTaskInputRef = React.useRef<HTMLInputElement | null>(null)
 
@@ -619,11 +596,6 @@ export default function Home() {
 		}
 	}
 
-	const dateStrip = React.useMemo(() => {
-		const weekStart = startOfWeek(selectedDate)
-		return Array.from({ length: DATE_RANGE_DAYS }, (_, index) => addDays(weekStart, index))
-	}, [selectedDate])
-
 	const selectedMoodMeta = getMoodMeta(selectedMood)
 	const completedTasks = tasks.filter((task) => task.done).length
 	const totalTasks = tasks.length
@@ -676,52 +648,7 @@ export default function Home() {
 					</div>
 
 					<div className="px-6 pb-3">
-						<div
-							ref={dateScrollRef}
-							className="flex gap-4 overflow-x-auto scroll-smooth py-3 no-scrollbar"
-						>
-							{dateStrip.map((date) => {
-								const isActive = isSameDay(date, selectedDate)
-								const dayKey = toDateKey(date)
-								return (
-									<button
-										key={dayKey}
-										onClick={() => {
-											setSelectedDate(date)
-											requestAnimationFrame(() => {
-												const container = dateScrollRef.current
-												if (!container) return
-												const target = container.querySelector<HTMLButtonElement>(
-													`button[data-date='${dayKey}']`
-												)
-												target?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" })
-											})
-										}}
-										data-date={dayKey}
-										className="flex flex-col items-center min-w-[52px]"
-									>
-										<div
-											className={cn(
-												"w-12 h-12 rounded-full flex items-center justify-center text-base font-semibold transition",
-												isActive
-													? "bg-black/[0.06] text-foreground"
-													: "text-muted-foreground/60"
-											)}
-										>
-											{date.getDate()}
-										</div>
-										<span
-											className={cn(
-												"text-xs tracking-[0.2em] uppercase mt-1",
-												isActive ? "text-foreground/80" : "text-muted-foreground/50"
-											)}
-										>
-											{date.toLocaleDateString("en-US", { weekday: "short" })}
-										</span>
-									</button>
-								)
-							})}
-						</div>
+						<DayStrip selectedDate={selectedDate} onSelect={setSelectedDate} />
 					</div>
 				</header>
 

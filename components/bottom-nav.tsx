@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Sparkles, Calendar, BarChart2 } from "lucide-react"
+import { Sparkles, Calendar, BarChart2, Clock } from "lucide-react"
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -13,6 +13,11 @@ export function BottomNav() {
       href: "/",
       label: "Journal",
       icon: Sparkles,
+    },
+    {
+      href: "/daily",
+      label: "Daily",
+      icon: Clock,
     },
     {
       href: "/history",
