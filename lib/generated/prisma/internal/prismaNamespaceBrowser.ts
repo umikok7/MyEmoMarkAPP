@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   daily_tasks: 'daily_tasks',
+  daily_time_blocks: 'daily_time_blocks',
   mood_records: 'mood_records',
   user_sessions: 'user_sessions',
   users: 'users',
@@ -90,6 +91,24 @@ export const Daily_tasksScalarFieldEnum = {
 } as const
 
 export type Daily_tasksScalarFieldEnum = (typeof Daily_tasksScalarFieldEnum)[keyof typeof Daily_tasksScalarFieldEnum]
+
+
+export const Daily_time_blocksScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  task_date: 'task_date',
+  start_minute: 'start_minute',
+  end_minute: 'end_minute',
+  title: 'title',
+  note: 'note',
+  color_tag: 'color_tag',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  deleted_at: 'deleted_at',
+  is_deleted: 'is_deleted'
+} as const
+
+export type Daily_time_blocksScalarFieldEnum = (typeof Daily_time_blocksScalarFieldEnum)[keyof typeof Daily_time_blocksScalarFieldEnum]
 
 
 export const Mood_recordsScalarFieldEnum = {

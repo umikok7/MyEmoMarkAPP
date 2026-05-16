@@ -385,6 +385,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   daily_tasks: 'daily_tasks',
+  daily_time_blocks: 'daily_time_blocks',
   mood_records: 'mood_records',
   user_sessions: 'user_sessions',
   users: 'users',
@@ -405,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "daily_tasks" | "mood_records" | "user_sessions" | "users" | "couple_spaces" | "couple_mood_records"
+    modelProps: "daily_tasks" | "daily_time_blocks" | "mood_records" | "user_sessions" | "users" | "couple_spaces" | "couple_mood_records"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -480,6 +481,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.daily_tasksCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Daily_tasksCountAggregateOutputType> | number
+        }
+      }
+    }
+    daily_time_blocks: {
+      payload: Prisma.$daily_time_blocksPayload<ExtArgs>
+      fields: Prisma.daily_time_blocksFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.daily_time_blocksFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.daily_time_blocksFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>
+        }
+        findFirst: {
+          args: Prisma.daily_time_blocksFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.daily_time_blocksFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>
+        }
+        findMany: {
+          args: Prisma.daily_time_blocksFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>[]
+        }
+        create: {
+          args: Prisma.daily_time_blocksCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>
+        }
+        createMany: {
+          args: Prisma.daily_time_blocksCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.daily_time_blocksCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>[]
+        }
+        delete: {
+          args: Prisma.daily_time_blocksDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>
+        }
+        update: {
+          args: Prisma.daily_time_blocksUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>
+        }
+        deleteMany: {
+          args: Prisma.daily_time_blocksDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.daily_time_blocksUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.daily_time_blocksUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>[]
+        }
+        upsert: {
+          args: Prisma.daily_time_blocksUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$daily_time_blocksPayload>
+        }
+        aggregate: {
+          args: Prisma.Daily_time_blocksAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDaily_time_blocks>
+        }
+        groupBy: {
+          args: Prisma.daily_time_blocksGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Daily_time_blocksGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.daily_time_blocksCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Daily_time_blocksCountAggregateOutputType> | number
         }
       }
     }
@@ -909,6 +984,24 @@ export const Daily_tasksScalarFieldEnum = {
 export type Daily_tasksScalarFieldEnum = (typeof Daily_tasksScalarFieldEnum)[keyof typeof Daily_tasksScalarFieldEnum]
 
 
+export const Daily_time_blocksScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  task_date: 'task_date',
+  start_minute: 'start_minute',
+  end_minute: 'end_minute',
+  title: 'title',
+  note: 'note',
+  color_tag: 'color_tag',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  deleted_at: 'deleted_at',
+  is_deleted: 'is_deleted'
+} as const
+
+export type Daily_time_blocksScalarFieldEnum = (typeof Daily_time_blocksScalarFieldEnum)[keyof typeof Daily_time_blocksScalarFieldEnum]
+
+
 export const Mood_recordsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
@@ -1205,6 +1298,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   daily_tasks?: Prisma.daily_tasksOmit
+  daily_time_blocks?: Prisma.daily_time_blocksOmit
   mood_records?: Prisma.mood_recordsOmit
   user_sessions?: Prisma.user_sessionsOmit
   users?: Prisma.usersOmit

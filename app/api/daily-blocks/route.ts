@@ -36,6 +36,30 @@ const parseTaskDate = (value?: string | null) => {
 
 const isValidMinute = (value: number) => Number.isInteger(value) && value >= 0 && value <= 1440
 
+/**
+ * 验证请求用户是否有权访问目标用户的 daily_blocks
+ * 只有互为情侣的账号才能访问对方的 blocks
+ */
+async function validateCoupleAccess(
+  requestUserId: string,
+  targetUserId: string
+): Promise<boolean> {
+  if (requestUserId === targetUserId) return true
+
+  const coupleSpace = await prisma.couple_spaces.findFirst({
+    where: {
+      is_deleted: false,
+      status: "accepted",
+      OR: [
+        { user_id_1: requestUserId, user_id_2: targetUserId },
+        { user_id_1: targetUserId, user_id_2: requestUserId },
+      ],
+    },
+  })
+
+  return coupleSpace !== null
+}
+
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
@@ -46,6 +70,14 @@ export async function GET(request: NextRequest) {
 
   if (userId === "guest") {
     return ok({ items: [] })
+  }
+
+  const hasAccess = await validateCoupleAccess(
+    sessionUserId && sessionUserId !== "guest" ? sessionUserId : userId,
+    userId
+  )
+  if (!hasAccess) {
+    return fail(403, "Access denied: not in couple relationship")
   }
 
   const blocks = await prisma.daily_time_blocks.findMany({
@@ -104,6 +136,16 @@ export async function POST(request: NextRequest) {
   const userId = resolveUserId(body.user_id || null, sessionUserId)
 
   if (userId === "guest") {
+    return fail(401, "Authentication required")
+  }
+
+  // 验证情侣关系（POST 不允许代持，只能创建自己的或情侣的 blocks）
+  if (sessionUserId && sessionUserId !== "guest" && sessionUserId !== userId) {
+    const hasAccess = await validateCoupleAccess(sessionUserId, userId)
+    if (!hasAccess) {
+      return fail(403, "Access denied: not in couple relationship")
+    }
+  } else if (!sessionUserId || sessionUserId === "guest") {
     return fail(401, "Authentication required")
   }
 

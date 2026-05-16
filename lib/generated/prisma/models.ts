@@ -9,6 +9,7 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/daily_tasks'
+export type * from './models/daily_time_blocks'
 export type * from './models/mood_records'
 export type * from './models/user_sessions'
 export type * from './models/users'

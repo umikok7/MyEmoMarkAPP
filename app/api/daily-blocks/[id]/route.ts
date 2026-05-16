@@ -13,7 +13,31 @@ type DailyBlockUpdatePayload = {
 
 const isValidMinute = (value: number) => Number.isInteger(value) && value >= 0 && value <= 1440
 
-export async function PATCH(
+/**
+ * 验证请求用户是否有权访问目标用户的 daily_blocks
+ * 只有互为情侣的账号才能访问对方的 blocks
+ */
+async function validateCoupleAccess(
+  requestUserId: string,
+  targetUserId: string
+): Promise<boolean> {
+  if (requestUserId === targetUserId) return true
+
+  const coupleSpace = await prisma.couple_spaces.findFirst({
+    where: {
+      is_deleted: false,
+      status: "accepted",
+      OR: [
+        { user_id_1: requestUserId, user_id_2: targetUserId },
+        { user_id_1: targetUserId, user_id_2: requestUserId },
+      ],
+    },
+  })
+
+  return coupleSpace !== null
+}
+
+export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -54,10 +78,27 @@ export async function PATCH(
     return fail(401, "Authentication required")
   }
 
+  // 获取当前 block 的拥有者
+  const existingBlock = await prisma.daily_time_blocks.findFirst({
+    where: { id: blockId, is_deleted: false },
+    select: { user_id: true },
+  })
+
+  if (!existingBlock) return fail(404, "Block not found")
+
+  // 验证情侣关系
+  if (sessionUserId && sessionUserId !== "guest" && sessionUserId !== existingBlock.user_id) {
+    const hasAccess = await validateCoupleAccess(sessionUserId, existingBlock.user_id)
+    if (!hasAccess) {
+      return fail(403, "Access denied: not in couple relationship")
+    }
+  } else if (!sessionUserId || sessionUserId === "guest") {
+    return fail(401, "Authentication required")
+  }
+
   const record = await prisma.daily_time_blocks.update({
     where: {
       id: blockId,
-      user_id: userId,
       is_deleted: false,
     },
     data: {
@@ -80,8 +121,6 @@ export async function PATCH(
       updated_at: true,
     },
   })
-
-  if (!record) return fail(404, "Block not found")
 
   return ok({
     record: {
@@ -107,10 +146,27 @@ export async function DELETE(
     return fail(401, "Authentication required")
   }
 
+  // 获取当前 block 的拥有者
+  const existingBlock = await prisma.daily_time_blocks.findFirst({
+    where: { id: blockId, is_deleted: false },
+    select: { user_id: true },
+  })
+
+  if (!existingBlock) return fail(404, "Block not found")
+
+  // 验证情侣关系
+  if (sessionUserId && sessionUserId !== "guest" && sessionUserId !== existingBlock.user_id) {
+    const hasAccess = await validateCoupleAccess(sessionUserId, existingBlock.user_id)
+    if (!hasAccess) {
+      return fail(403, "Access denied: not in couple relationship")
+    }
+  } else if (!sessionUserId || sessionUserId === "guest") {
+    return fail(401, "Authentication required")
+  }
+
   const record = await prisma.daily_time_blocks.update({
     where: {
       id: blockId,
-      user_id: userId,
       is_deleted: false,
     },
     data: {
@@ -118,8 +174,6 @@ export async function DELETE(
     },
     select: { id: true },
   })
-
-  if (!record) return fail(404, "Block not found")
 
   return ok({ success: true })
 }

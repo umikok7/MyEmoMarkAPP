@@ -30,7 +30,7 @@ type TimeRange = {
 }
 
 const DAY_START_MINUTES = 5 * 60
-const DAY_END_MINUTES = 24 * 60
+const DAY_END_MINUTES = 25 * 60
 const SLOT_MINUTES = 30
 const HOUR_HEIGHT = 64
 
@@ -268,7 +268,7 @@ export default function DailyPage() {
 
   React.useEffect(() => {
     fetchBlocks()
-  }, [fetchBlocks])
+  }, [userId, partnerId, fetchBlocks])
 
   const handleSaveBlock = async () => {
     if (!draftRange || !userId) return
@@ -383,20 +383,20 @@ export default function DailyPage() {
                 <button
                   onClick={() => setViewMode("me")}
                   className={cn(
-                    "px-3 py-1 rounded-full text-[8px] font-medium tracking-[0.2em] uppercase transition",
+                    "px-3 py-1 rounded-full text-[5px] font-semibold tracking-[0.04em] uppercase transition",
                     viewMode === "me" ? "bg-black text-white" : "text-stone-500"
                   )}
                 >
-                  Me
+                  我的
                 </button>
                 <button
                   onClick={() => setViewMode("both")}
                   className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-medium tracking-[0.2em] uppercase transition",
+                    "px-3 py-1 rounded-full text-[5px] font-semibold tracking-[0.04em] uppercase transition",
                     viewMode === "both" ? "bg-black text-white" : "text-stone-500"
                   )}
                 >
-                  Both
+                  两者
                 </button>
               </div>
             </div>
