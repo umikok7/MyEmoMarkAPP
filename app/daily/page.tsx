@@ -99,6 +99,7 @@ export default function DailyPage() {
   const [draftTitle, setDraftTitle] = React.useState("")
   const [draftNote, setDraftNote] = React.useState("")
   const [isSaving, setIsSaving] = React.useState(false)
+  const [editingBlockId, setEditingBlockId] = React.useState<string | null>(null)
 
   const gridRef = React.useRef<HTMLDivElement | null>(null)
   const activePointerId = React.useRef<number | null>(null)
@@ -133,6 +134,10 @@ export default function DailyPage() {
     if (isSaving) return
     if (activePointerId.current !== null) return
 
+    // 如果点击的是日程块本身，不进入选择模式（让 block 的 onClick 处理）
+    const target = event.target as HTMLElement
+    if (target.closest('[data-block-id]')) return
+
     const minute = getMinuteFromPointer(event.clientY)
     startMinuteRef.current = minute
     activePointerId.current = event.pointerId
@@ -140,11 +145,12 @@ export default function DailyPage() {
 
     const activateSelection = () => {
       isSelectingRef.current = true
+      if (navigator.vibrate) navigator.vibrate(10)
       setDraftRange({ start: minute, end: minute })
     }
 
-    if (event.pointerType === "touch") {
-      longPressTimerRef.current = window.setTimeout(activateSelection, 220)
+    if (event.pointerType === "touch" || event.pointerType === "mouse") {
+      longPressTimerRef.current = window.setTimeout(activateSelection, 150)
       return
     }
 
@@ -195,8 +201,77 @@ export default function DailyPage() {
     setIsEditorOpen(false)
     setDraftTitle("")
     setDraftNote("")
+    setEditingBlockId(null)
     resetSelection()
   }, [resetSelection])
+
+  const handleBlockClick = (block: DailyBlock) => {
+    setEditingBlockId(block.id)
+    setDraftRange({ start: block.start_minute, end: block.end_minute })
+    setDraftTitle(block.title)
+    setDraftNote(block.note || "")
+    setIsEditorOpen(true)
+  }
+
+  const handleDeleteBlock = async () => {
+    if (!editingBlockId) return
+    setIsSaving(true)
+    try {
+      const response = await fetch(buildApiUrl(`/daily-blocks/${editingBlockId}`), {
+        method: "DELETE",
+        credentials: "include",
+      })
+      if (!response.ok) throw new Error("Failed to delete block")
+      setBlocks((prev) => prev.filter((b) => b.id !== editingBlockId))
+      toast("已删除")
+      closeEditor()
+    } catch (error) {
+      console.error("Daily block delete failed", error)
+      toast("删除失败", { description: "请重试", duration: 2000 })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleUpdateBlock = async () => {
+    if (!editingBlockId || !draftRange) return
+    const title = draftTitle.trim()
+    if (!title) {
+      toast("Title required", { description: "Please enter a title", duration: 2000 })
+      return
+    }
+    setIsSaving(true)
+    try {
+      const response = await fetch(buildApiUrl(`/daily-blocks/${editingBlockId}`), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          note: draftNote.trim() || null,
+          start_minute: draftRange.start,
+          end_minute: draftRange.end,
+        }),
+      })
+      if (!response.ok) throw new Error("Failed to update block")
+      const json = await response.json()
+      const record = json?.data?.record as DailyBlock | undefined
+      if (record) {
+        setBlocks((prev) =>
+          prev
+            .map((b) => (b.id === editingBlockId ? record : b))
+            .sort((a, b) => a.start_minute - b.start_minute)
+        )
+        toast("已更新", { description: record.title, duration: 1800 })
+      }
+      closeEditor()
+    } catch (error) {
+      console.error("Daily block update failed", error)
+      toast("更新失败", { description: "请重试", duration: 2000 })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const fetchBlocks = React.useCallback(async () => {
     if (!userId) {
@@ -329,15 +404,22 @@ export default function DailyPage() {
       const theme = colorThemes[index % colorThemes.length]
       const top = (block.start_minute - DAY_START_MINUTES) * pixelsPerMinute
       const height = Math.max((block.end_minute - block.start_minute) * pixelsPerMinute, 32)
+      const showNote = height >= 48 && block.note
       return (
         <div
           key={block.id}
+          data-block-id={block.id}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleBlockClick(block)
+          }}
           className={cn(
             "absolute left-1 right-1 rounded-lg border px-2 py-1.5 text-xs",
             theme.bg,
             theme.border,
             theme.text,
-            isPartner && "opacity-60"
+            isPartner && "opacity-60",
+            !isPartner && "cursor-pointer"
           )}
           style={{ top, height }}
         >
@@ -348,7 +430,7 @@ export default function DailyPage() {
             </span>
           </div>
           {block.note ? (
-            <p className="mt-0.5 line-clamp-2 text-[9px] opacity-70">{block.note}</p>
+            <p className="mt-0.5 text-[9px] opacity-70 whitespace-normal wrap-break-word">{block.note}</p>
           ) : null}
         </div>
       )
@@ -356,13 +438,13 @@ export default function DailyPage() {
 
   const selectionOverlay = draftRange && (isSelectingRef.current || isEditorOpen) && (
     <div
-      className="absolute left-1 right-1 rounded-lg border border-dashed border-stone-400 bg-white/50"
+      className="absolute left-1 right-1 rounded-xl border-2 border-dashed border-stone-400/60 bg-stone-100/40 backdrop-blur-sm"
       style={{
         top: (draftRange.start - DAY_START_MINUTES) * pixelsPerMinute,
         height: Math.max((draftRange.end - draftRange.start) * pixelsPerMinute, 32),
       }}
     >
-      <div className="px-2 py-1 text-[9px] text-stone-500">
+      <div className="px-5 py-1 text-[9px] text-stone-500">
         {formatMinuteLabel(draftRange.start)} - {formatMinuteLabel(draftRange.end)}
       </div>
     </div>
@@ -453,9 +535,12 @@ export default function DailyPage() {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
-              className="relative rounded-xl bg-white/80 border border-black/[0.04] shadow-[0_6px_18px_rgba(0,0,0,0.06)] overflow-hidden"
+              className="relative rounded-xl bg-white/80 border border-black/[0.04] shadow-[0_6px_18px_rgba(0,0,0,0.06)] overflow-hidden select-none touch-pan-y"
               style={{
                 height: gridHeight,
+                WebkitUserSelect: "none",
+                userSelect: "none",
+                touchAction: "none",
                 backgroundImage:
                   "linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)",
                 backgroundSize: `${HOUR_HEIGHT}px ${HOUR_HEIGHT}px, ${HOUR_HEIGHT / 2}px ${HOUR_HEIGHT / 2}px`,
@@ -496,7 +581,9 @@ export default function DailyPage() {
           <div className="w-full max-w-md rounded-t-3xl bg-white px-6 py-5 shadow-[0_-10px_30px_rgba(0,0,0,0.15)]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-stone-400 uppercase tracking-[0.3em]">New Plan</p>
+                <p className="text-xs text-stone-400 uppercase tracking-[0.3em]">
+                  {editingBlockId ? "编辑计划" : "新计划"}
+                </p>
                 <h3 className="text-lg font-semibold text-stone-800 mt-1">
                   {formatMinuteLabel(draftRange.start)} - {formatMinuteLabel(draftRange.end)}
                 </h3>
@@ -505,7 +592,7 @@ export default function DailyPage() {
                 onClick={closeEditor}
                 className="text-xs text-stone-400 hover:text-stone-600 transition"
               >
-                Close
+                关闭
               </button>
             </div>
 
@@ -522,22 +609,34 @@ export default function DailyPage() {
                 className="min-h-[90px]"
               />
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="flex-1 rounded-full"
-                  onClick={closeEditor}
-                  disabled={isSaving}
-                >
-                  取消
-                </Button>
+                {editingBlockId ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="flex-1 rounded-full"
+                    onClick={handleDeleteBlock}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "删除中..." : "删除"}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="flex-1 rounded-full"
+                    onClick={closeEditor}
+                    disabled={isSaving}
+                  >
+                    取消
+                  </Button>
+                )}
                 <Button
                   type="button"
                   className="flex-1 rounded-full bg-foreground text-white hover:bg-foreground/90"
-                  onClick={handleSaveBlock}
+                  onClick={editingBlockId ? handleUpdateBlock : handleSaveBlock}
                   disabled={isSaving}
                 >
-                  {isSaving ? "保存中..." : "保存"}
+                  {isSaving ? "保存中..." : editingBlockId ? "修改" : "保存"}
                 </Button>
               </div>
             </div>
