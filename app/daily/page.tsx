@@ -100,8 +100,10 @@ export default function DailyPage() {
   const [draftNote, setDraftNote] = React.useState("")
   const [isSaving, setIsSaving] = React.useState(false)
   const [editingBlockId, setEditingBlockId] = React.useState<string | null>(null)
+  const [currentTime, setCurrentTime] = React.useState(new Date())
 
   const gridRef = React.useRef<HTMLDivElement | null>(null)
+  const scrollRef = React.useRef<HTMLDivElement | null>(null)
   const activePointerId = React.useRef<number | null>(null)
   const startMinuteRef = React.useRef<number | null>(null)
   const longPressTimerRef = React.useRef<number | null>(null)
@@ -345,6 +347,33 @@ export default function DailyPage() {
     fetchBlocks()
   }, [userId, partnerId, fetchBlocks])
 
+  // Update current time every minute
+  React.useEffect(() => {
+    const tick = () => setCurrentTime(new Date())
+    tick()
+    const interval = setInterval(tick, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Scroll to current time indicator on mount and when currentTime changes
+  React.useEffect(() => {
+    const selectedDateKey = toDateKey(selectedDate)
+    const todayDateKey = toDateKey(new Date())
+    if (selectedDateKey !== todayDateKey) return
+
+    const now = currentTime
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+    if (currentMinutes < DAY_START_MINUTES || currentMinutes > DAY_END_MINUTES) return
+
+    const scrollContainer = scrollRef.current
+    if (!scrollContainer) return
+
+    const top = (currentMinutes - DAY_START_MINUTES) * pixelsPerMinute
+    const viewportHeight = scrollContainer.clientHeight
+    const targetScroll = Math.max(0, top - viewportHeight / 2)
+    scrollContainer.scrollTo({ top: targetScroll, behavior: "smooth" })
+  }, [currentTime, selectedDate, pixelsPerMinute])
+
   const handleSaveBlock = async () => {
     if (!draftRange || !userId) return
     const title = draftTitle.trim()
@@ -509,7 +538,46 @@ export default function DailyPage() {
           </div>
 
           {/* Time axis + Grids row */}
-          <div className="grid grid-cols-[25px_1fr_1fr] gap-1">
+          <div
+            ref={scrollRef}
+            className="relative overflow-y-auto overscroll-contain"
+            style={{ maxHeight: "60vh" }}
+          >
+            {/* Current time indicator - spans all columns */}
+            {(() => {
+              const selectedDateKey = toDateKey(selectedDate)
+              const todayDateKey = toDateKey(new Date())
+              if (selectedDateKey !== todayDateKey) return null
+
+              const now = currentTime
+              const currentMinutes = now.getHours() * 60 + now.getMinutes()
+              if (currentMinutes < DAY_START_MINUTES || currentMinutes > DAY_END_MINUTES) return null
+
+              const top = (currentMinutes - DAY_START_MINUTES) * pixelsPerMinute
+              const hours = now.getHours()
+              const minutes = now.getMinutes()
+              const timeLabel = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+
+              return (
+                <div
+                  className="absolute left-0 right-0 flex items-center pointer-events-none z-20 "
+                  style={{ top: `calc(${top}px - 4px)` }}
+                >
+                  {/* Time label in axis column */}
+                  <div className="w-[25px] shrink-0 pl-0.5 justify-end">
+                    {/* <span className="text-[9px] font-medium text-red-500">
+                      {timeLabel}
+                    </span> */}
+                  </div>
+                  {/* Dot at boundary */}
+                  <div className="w-2 h-2 -translate-x-1/2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] shrink-0" />
+                  {/* Line spanning across both grids */}
+                  <div className="flex-1 h-[1px] bg-gradient-to-r from-red-400 via-orange-400 to-transparent rounded-full" />
+                </div>
+              )
+            })()}
+
+            <div className="grid grid-cols-[25px_1fr_1fr] gap-1">
             <div
               className="relative text-[10px] text-stone-400"
               style={{ height: gridHeight }}
@@ -572,6 +640,7 @@ export default function DailyPage() {
               ) : null}
               {renderBlocks(partnerBlocks, true)}
             </div>
+          </div>
           </div>
         </section>
       </main>
