@@ -347,6 +347,25 @@ export default function DailyPage() {
     fetchBlocks()
   }, [userId, partnerId, fetchBlocks])
 
+  // Cleanup old records on mount (once per day)
+  React.useEffect(() => {
+    const LAST_CLEANUP_KEY = "last_cleanup_date"
+    const today = toDateKey(new Date())
+    const lastCleanup = localStorage.getItem(LAST_CLEANUP_KEY)
+
+    if (lastCleanup !== today) {
+      fetch(buildApiUrl("/cleanup"), { credentials: "include" })
+        .then((res) => res.ok ? res.json() : null)
+        .then((json) => {
+          if (json?.data?.deletedBlocks > 0) {
+            console.log(`[cleanup] Removed ${json.data.deletedBlocks} old blocks`)
+          }
+        })
+        .catch(() => {})
+        .finally(() => localStorage.setItem(LAST_CLEANUP_KEY, today))
+    }
+  }, [])
+
   // Update current time every minute
   React.useEffect(() => {
     const tick = () => setCurrentTime(new Date())
