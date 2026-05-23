@@ -224,12 +224,19 @@ export default function Home() {
 	const today = toDateKey(new Date())
 	const lastCleanup = localStorage.getItem(LAST_CLEANUP_KEY)
 
+	// 过期数据清理，每天一次
 	if (lastCleanup !== today) {
-		fetch(buildApiUrl("/cleanup/home-page"), { credentials: "include" })
+		fetch(buildApiUrl("/cleanup"), { credentials: "include" })
 		.then((res) => res.ok ? res.json() : null)
 		.then((json) => {
 			if (json?.data?.deletedBlocks > 0) {
 			console.log(`[cleanup] Removed ${json.data.deletedBlocks} old blocks`)
+			}
+			if (json?.data?.deletedTimeBlocks > 0) {
+			console.log(`[cleanup] Removed ${json.data.deletedTimeBlocks} old time blocks`)
+			}
+			if (json?.data?.deletedUserSessions > 0) {
+			console.log(`[cleanup] Removed ${json.data.deletedUserSessions} expired user sessions`)
 			}
 		})
 		.catch(() => {})
