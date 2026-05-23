@@ -219,6 +219,24 @@ export default function Home() {
 		setIsLoggedIn(false)
 	}, [])
 
+	React.useEffect(() => {
+	const LAST_CLEANUP_KEY = "last_cleanup_date"
+	const today = toDateKey(new Date())
+	const lastCleanup = localStorage.getItem(LAST_CLEANUP_KEY)
+
+	if (lastCleanup !== today) {
+		fetch(buildApiUrl("/cleanup/home-page"), { credentials: "include" })
+		.then((res) => res.ok ? res.json() : null)
+		.then((json) => {
+			if (json?.data?.deletedBlocks > 0) {
+			console.log(`[cleanup] Removed ${json.data.deletedBlocks} old blocks`)
+			}
+		})
+		.catch(() => {})
+		.finally(() => localStorage.setItem(LAST_CLEANUP_KEY, today))
+	}
+	}, [])
+
 	const fetchTasksForDate = React.useCallback(async (date: Date) => {
 		if (!userId) return [] as TaskItem[]
 		const res = await fetch(
