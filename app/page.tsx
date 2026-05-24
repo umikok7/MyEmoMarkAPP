@@ -226,7 +226,10 @@ export default function Home() {
 
 	// 过期数据清理，每天一次
 	if (lastCleanup !== today) {
-		fetch(buildApiUrl("/cleanup"), { credentials: "include" })
+		fetch(buildApiUrl("/cleanup"), {
+			method: "POST",
+			credentials: "include" 
+		})
 		.then((res) => res.ok ? res.json() : null)
 		.then((json) => {
 			if (json?.data?.deletedBlocks > 0) {

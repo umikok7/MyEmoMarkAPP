@@ -5,7 +5,7 @@ import { ok, fail } from "@/lib/server/helpers"
 const CUTOFF_DAYS = 5
 const SESSION_CUTOFF_DAYS = 7
 
-export async function GET() {
+export async function POST() {
   try {
     const cutoffDate = addDays(new Date(), -CUTOFF_DAYS)
     cutoffDate.setHours(0, 0, 0, 0)
