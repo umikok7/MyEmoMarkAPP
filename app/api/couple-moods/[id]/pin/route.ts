@@ -1,6 +1,12 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { fail, getSessionUserId, ok } from "@/lib/server/helpers"
+import { fail, getSessionUserId, ok, parseJson } from "@/lib/server/helpers"
+
+type PinBody = {
+  collection?: "lesson" | "education" | null
+}
+
+const VALID_COLLECTIONS = new Set(["lesson", "education", null])
 
 export async function PATCH(
   request: NextRequest,
@@ -28,14 +34,21 @@ export async function PATCH(
     return fail(403, "Only the creator can pin this mood")
   }
 
-  const newPinnedState = !mood.is_pinned
+  const body = await parseJson<PinBody>(request)
+  if (!body) return fail(400, "Invalid JSON payload")
+
+  const { collection } = body
+
+  if (!VALID_COLLECTIONS.has(collection ?? null)) {
+    return fail(400, "collection must be 'lesson', 'education', or null")
+  }
 
   const updated = await prisma.couple_mood_records.update({
     where: { id: moodId },
-    data: { is_pinned: newPinnedState },
+    data: { pinned_collection: collection ?? null },
   })
 
   return ok({
-    is_pinned: updated.is_pinned,
+    pinned_collection: updated.pinned_collection,
   })
 }

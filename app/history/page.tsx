@@ -17,6 +17,8 @@ import { PendingInvitationStatus } from "@/components/pending-invitation-status"
 import { InviteAcceptModal } from "@/components/invite-accept-modal"
 import { LikeNotifications } from "@/components/like-notifications"
 import type { CoupleSpace } from "@/components/space-switch"
+import { useLongPress } from "@/lib/hooks/use-long-press"
+import { PinCollectionMenu, type PinnedCollection } from "@/components/pin-collection-menu"
 
 // Mock Data removed
 type MoodType = "happy" | "calm" | "anxious" | "sad" | "angry"
@@ -32,7 +34,7 @@ interface JournalEntry {
   author_id?: string
   is_mine?: boolean
   liked_by_user_id?: string | null
-  is_pinned?: boolean
+  pinned_collection?: PinnedCollection
 }
 
 type ServerMoodItem = {
@@ -58,7 +60,7 @@ type CoupleMoodItem = {
   created_at: string
   liked_by_user_id?: string | null
   liked_at?: string | null
-  is_pinned?: boolean
+  pinned_collection?: PinnedCollection
 }
 
 type LikeNotification = {
@@ -120,7 +122,7 @@ export default function HistoryPage() {
         author_id: coupleItem.created_by_user_id,
         is_mine: isMine,
         liked_by_user_id: likedBy,
-        is_pinned: coupleItem.is_pinned ?? false,
+        pinned_collection: coupleItem.pinned_collection ?? null,
       }
     }
 
@@ -362,26 +364,24 @@ export default function HistoryPage() {
   }, [loadMore])
 
 
-  // Separate pinned entries by mood type: Heat (angry) goes to lesson cards, others to education cards
+  // Separate pinned entries by user-chosen collection
   const { lessonPinnedEntries, educationPinnedEntries, unpinnedEntries } = React.useMemo(() => {
     const lessonPinned: JournalEntry[] = []
     const educationPinned: JournalEntry[] = []
     const unpinned: JournalEntry[] = []
     data.forEach((entry) => {
-      if (entry.is_pinned) {
-        if (entry.mood === "angry") {
-          lessonPinned.push(entry)
-        } else {
-          educationPinned.push(entry)
-        }
+      if (entry.pinned_collection === "lesson") {
+        lessonPinned.push(entry)
+      } else if (entry.pinned_collection === "education") {
+        educationPinned.push(entry)
       } else {
         unpinned.push(entry)
       }
     })
-    return { 
-      lessonPinnedEntries: lessonPinned, 
+    return {
+      lessonPinnedEntries: lessonPinned,
       educationPinnedEntries: educationPinned,
-      unpinnedEntries: unpinned 
+      unpinnedEntries: unpinned
     }
   }, [data])
 
@@ -541,7 +541,7 @@ export default function HistoryPage() {
               {/* Expanded Content - Lesson Cards */}
               <div className={cn(
                 "overflow-hidden transition-all duration-500 ease-out",
-                lessonPinnedExpanded ? "mt-4 max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                lessonPinnedExpanded ? "mt-4 max-h-[9999px] opacity-100" : "max-h-0 opacity-0"
               )}>
                 {/* Group pinned entries by date */}
                 {Object.entries(
@@ -571,9 +571,9 @@ export default function HistoryPage() {
                           showAuthor={false}
                           chatLayout={false}
                           currentSpace={currentSpace}
-                          onPinned={(id, isPinned) => {
+                          onPinned={(id, pinnedCollection) => {
                             setData((prev) => prev.map((item) =>
-                              item.id === id ? { ...item, is_pinned: isPinned } : item
+                              item.id === id ? { ...item, pinned_collection: pinnedCollection } : item
                             ))
                           }}
                         />
@@ -633,7 +633,7 @@ export default function HistoryPage() {
               {/* Expanded Content - Education Cards */}
               <div className={cn(
                 "overflow-hidden transition-all duration-500 ease-out",
-                educationPinnedExpanded ? "mt-4 max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                educationPinnedExpanded ? "mt-4 max-h-[9999px] opacity-100" : "max-h-0 opacity-0"
               )}>
                 {/* Group pinned entries by date */}
                 {Object.entries(
@@ -663,9 +663,9 @@ export default function HistoryPage() {
                           showAuthor={false}
                           chatLayout={false}
                           currentSpace={currentSpace}
-                          onPinned={(id, isPinned) => {
+                          onPinned={(id, pinnedCollection) => {
                             setData((prev) => prev.map((item) =>
-                              item.id === id ? { ...item, is_pinned: isPinned } : item
+                              item.id === id ? { ...item, pinned_collection: pinnedCollection } : item
                             ))
                           }}
                         />
@@ -721,9 +721,9 @@ export default function HistoryPage() {
                         if (!deletedId) return
                         setData((prev) => prev.filter((item) => item.id !== deletedId))
                       }}
-                      onPinned={(id, isPinned) => {
+                      onPinned={(id, pinnedCollection) => {
                         setData((prev) => prev.map((item) =>
-                          item.id === id ? { ...item, is_pinned: isPinned } : item
+                          item.id === id ? { ...item, pinned_collection: pinnedCollection } : item
                         ))
                       }}
                     />
@@ -777,7 +777,7 @@ function TimelineCard({
   entry: JournalEntry
   onUpdated?: (record: ServerMoodItem) => void
   onDeleted?: (deletedId: string) => void
-  onPinned?: (id: string, isPinned: boolean) => void
+  onPinned?: (id: string, pinnedCollection: PinnedCollection) => void
   showAuthor?: boolean
   chatLayout?: boolean
   currentSpace?: "personal" | "couple"
@@ -792,8 +792,11 @@ function TimelineCard({
   const [isDeleting, setIsDeleting] = React.useState(false)
   const [isLiked, setIsLiked] = React.useState(!!entry.liked_by_user_id)
   const [isLikeAnimating, setIsLikeAnimating] = React.useState(false)
-  const [isPinned, setIsPinned] = React.useState(entry.is_pinned ?? false)
+  const [pinnedCollection, setPinnedCollection] = React.useState<PinnedCollection>(entry.pinned_collection ?? null)
   const [isPinning, setIsPinning] = React.useState(false)
+  const [pinMenuOpen, setPinMenuOpen] = React.useState(false)
+  const [pinAnchorRect, setPinAnchorRect] = React.useState<DOMRect | null>(null)
+  const pinButtonRef = React.useRef<HTMLButtonElement>(null)
   const config = MOOD_CONFIG[entry.mood]
   const Icon = config.icon
 
@@ -864,46 +867,52 @@ function TimelineCard({
 
   const canPin = currentSpace === "couple" && entry.is_mine === true
 
-  const handlePin = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
+  const setPinCollection = React.useCallback(
+    async (nextCollection: PinnedCollection) => {
+      if (!canPin || isPinning) return
+      if (nextCollection === pinnedCollection) return
 
-    if (!canPin || isPinning) return
+      const previousCollection = pinnedCollection
+      setIsPinning(true)
+      setPinnedCollection(nextCollection)
 
-    if (navigator.vibrate) {
-      navigator.vibrate(8)
-    }
+      try {
+        const res = await fetch(buildApiUrl(`/couple-moods/${entry.id}/pin`), {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ collection: nextCollection }),
+        })
 
-    const newPinnedState = !isPinned
-    setIsPinning(true)
-    setIsPinned(newPinnedState)
-
-    const apiEndpoint = buildApiUrl(`/couple-moods/${entry.id}/pin`)
-
-    fetch(apiEndpoint, {
-      method: "PATCH",
-      credentials: "include",
-    })
-      .then((res) => {
-        if (!res.ok) {
-          setIsPinned(!newPinnedState)
-          throw new Error("Failed to update pin")
-        }
-        return res.json()
-      })
-      .then((json) => {
-        setIsPinning(false)
-        onPinned?.(entry.id, json.data.is_pinned)
-      })
-      .catch((error) => {
+        if (!res.ok) throw new Error("Failed to update pin")
+        const json = await res.json()
+        const serverCollection: PinnedCollection = json.data.pinned_collection ?? null
+        setPinnedCollection(serverCollection)
+        onPinned?.(entry.id, serverCollection)
+      } catch (error) {
         console.error("Pin error:", error)
-        setIsPinned(!newPinnedState)
-        setIsPinning(false)
+        setPinnedCollection(previousCollection)
         toast("Could not update", {
           description: "Please try again.",
           duration: 2000,
         })
-      })
-  }, [canPin, isPinned, isPinning, entry.id, onPinned])
+      } finally {
+        setIsPinning(false)
+      }
+    },
+    [canPin, isPinning, pinnedCollection, entry.id, onPinned],
+  )
+
+  const openPinMenu = React.useCallback(() => {
+    if (!canPin || isPinning) return
+    const rect = pinButtonRef.current?.getBoundingClientRect()
+    if (!rect) return
+    setPinAnchorRect(rect)
+    setPinMenuOpen(true)
+  }, [canPin, isPinning])
+
+  const { triggeredRef: _longPressTriggered, ...longPressHandlers } = useLongPress(openPinMenu, { delay: 500 })
+  void _longPressTriggered
 
   const card = (
     <Card 
@@ -917,9 +926,14 @@ function TimelineCard({
         // Faint rose tint for partner card
         chatLayout && isPartnerCard && "bg-rose-50/30 hover:bg-rose-50/50",
         // Pinned card: important/warning style
-        isPinned && [
+        pinnedCollection === "lesson" && [
           "border-l-4 border-l-amber-500",
           "bg-gradient-to-r from-amber-50/50 to-white/60",
+          "shadow-md hover:shadow-lg",
+        ],
+        pinnedCollection === "education" && [
+          "border-l-4 border-l-indigo-500",
+          "bg-gradient-to-r from-indigo-50/50 to-white/60",
           "shadow-md hover:shadow-lg",
         ]
       )}
@@ -951,24 +965,29 @@ function TimelineCard({
             )}>
               <AuthorBadge isMine={entry.is_mine} />
               <span className={cn("font-mono", chatLayout ? "text-sm font-semibold text-muted-foreground/60" : "text-[11px] text-muted-foreground/45")}>{entry.time}</span>
-              {isPinned && canPin && (
+              {canPin && (
                 <button
-                  onClick={handlePin}
-                  className="p-1 rounded-md hover:bg-amber-100/50 transition-colors cursor-pointer"
-                  title="Unpin"
+                  ref={pinButtonRef}
+                  type="button"
+                  onClick={(e) => e.stopPropagation()}
+                  {...longPressHandlers}
+                  className={cn(
+                    "p-2 -m-1 rounded-lg transition-colors cursor-pointer relative",
+                    pinnedCollection === "lesson" && "hover:bg-amber-100/50",
+                    pinnedCollection === "education" && "hover:bg-indigo-100/50",
+                    pinnedCollection === null && "hover:bg-muted/50",
+                    isPinning && "opacity-60 pointer-events-none"
+                  )}
+                  title="长按选择合集"
                   disabled={isPinning}
+                  aria-label="长按选择置顶合集"
                 >
-                  <Pin className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                </button>
-              )}
-              {canPin && !isPinned && (
-                <button
-                  onClick={handlePin}
-                  className="p-1 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
-                  title="Pin to top"
-                  disabled={isPinning}
-                >
-                  <Pin className="w-3.5 h-3.5 text-muted-foreground/40" />
+                  <Pin className={cn(
+                    "w-5 h-5 transition-colors",
+                    pinnedCollection === "lesson" && "text-amber-500 fill-amber-500/20",
+                    pinnedCollection === "education" && "text-indigo-500 fill-indigo-500/20",
+                    pinnedCollection === null && "text-muted-foreground/40"
+                  )} strokeWidth={1.8} />
                 </button>
               )}
               {isLiked && (
@@ -982,24 +1001,29 @@ function TimelineCard({
               <h3 className={cn("text-base font-bold tracking-wide", config.color)}>{config.label}</h3>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold font-mono text-muted-foreground/65">{entry.time}</span>
-                {isPinned && canPin && (
+                {canPin && (
                   <button
-                    onClick={handlePin}
-                    className="p-1 rounded-md hover:bg-amber-100/50 transition-colors cursor-pointer"
-                    title="Unpin"
+                    ref={pinButtonRef}
+                    type="button"
+                    onClick={(e) => e.stopPropagation()}
+                    {...longPressHandlers}
+                    className={cn(
+                      "p-2 -m-1 rounded-lg transition-colors cursor-pointer relative",
+                      pinnedCollection === "lesson" && "hover:bg-amber-100/50",
+                      pinnedCollection === "education" && "hover:bg-indigo-100/50",
+                      pinnedCollection === null && "hover:bg-muted/50",
+                      isPinning && "opacity-60 pointer-events-none"
+                    )}
+                    title="长按选择合集"
                     disabled={isPinning}
+                    aria-label="长按选择置顶合集"
                   >
-                    <Pin className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                  </button>
-                )}
-                {canPin && !isPinned && (
-                  <button
-                    onClick={handlePin}
-                    className="p-1 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
-                    title="Pin to top"
-                    disabled={isPinning}
-                  >
-                    <Pin className="w-3.5 h-3.5 text-muted-foreground/40" />
+                    <Pin className={cn(
+                      "w-5 h-5 transition-colors",
+                      pinnedCollection === "lesson" && "text-amber-500 fill-amber-500/20",
+                      pinnedCollection === "education" && "text-indigo-500 fill-indigo-500/20",
+                      pinnedCollection === null && "text-muted-foreground/40"
+                    )} strokeWidth={1.8} />
                   </button>
                 )}
                 {isLiked && (
@@ -1350,6 +1374,17 @@ function TimelineCard({
           </div>
         </div>,
         document.body
+      )}
+      {pinMenuOpen && pinAnchorRect && (
+        <PinCollectionMenu
+          anchorRect={pinAnchorRect}
+          currentCollection={pinnedCollection}
+          onSelect={(collection) => {
+            setPinMenuOpen(false)
+            setPinCollection(collection)
+          }}
+          onClose={() => setPinMenuOpen(false)}
+        />
       )}
     </Card>
   )
