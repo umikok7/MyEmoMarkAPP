@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma"
 import { fail, getSessionUserId, ok, parseJson } from "@/lib/server/helpers"
 
 type PinBody = {
-  collection?: "lesson" | "education" | null
+  collection?: "lesson" | "education" | "alert" | null
 }
 
-const VALID_COLLECTIONS = new Set(["lesson", "education", null])
+const VALID_COLLECTIONS = new Set(["lesson", "education", "alert", null])
 
 export async function PATCH(
   request: NextRequest,

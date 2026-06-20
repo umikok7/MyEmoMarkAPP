@@ -365,15 +365,18 @@ export default function HistoryPage() {
 
 
   // Separate pinned entries by user-chosen collection
-  const { lessonPinnedEntries, educationPinnedEntries, unpinnedEntries } = React.useMemo(() => {
+  const { lessonPinnedEntries, educationPinnedEntries, alertPinnedEntries, unpinnedEntries } = React.useMemo(() => {
     const lessonPinned: JournalEntry[] = []
     const educationPinned: JournalEntry[] = []
+    const alertPinned: JournalEntry[] = []
     const unpinned: JournalEntry[] = []
     data.forEach((entry) => {
       if (entry.pinned_collection === "lesson") {
         lessonPinned.push(entry)
       } else if (entry.pinned_collection === "education") {
         educationPinned.push(entry)
+      } else if (entry.pinned_collection === "alert") {
+        alertPinned.push(entry)
       } else {
         unpinned.push(entry)
       }
@@ -381,12 +384,14 @@ export default function HistoryPage() {
     return {
       lessonPinnedEntries: lessonPinned,
       educationPinnedEntries: educationPinned,
+      alertPinnedEntries: alertPinned,
       unpinnedEntries: unpinned
     }
   }, [data])
 
   const [lessonPinnedExpanded, setLessonPinnedExpanded] = React.useState(false)
   const [educationPinnedExpanded, setEducationPinnedExpanded] = React.useState(false)
+  const [alertPinnedExpanded, setAlertPinnedExpanded] = React.useState(false)
 
   // Group unpinned entries by date
   const groupedEntries = React.useMemo(() => {
@@ -677,6 +682,98 @@ export default function HistoryPage() {
             </div>
           )}
 
+          {/* Pinned Cards Stacked Section - Alert Cards */}
+          {alertPinnedEntries.length > 0 && currentSpace === "couple" && (
+            <div className="mb-8 pl-14">
+              <button
+                onClick={() => setAlertPinnedExpanded(!alertPinnedExpanded)}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-3 rounded-2xl",
+                  "bg-gradient-to-r from-rose-50 to-rose-100/50",
+                  "border border-rose-200/60",
+                  "shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer",
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {alertPinnedEntries.slice(0, 3).map((entry) => {
+                      const config = MOOD_CONFIG[entry.mood]
+                      const Icon = config.icon
+                      return (
+                        <div
+                          key={entry.id}
+                          className={cn(
+                            "w-8 h-8 rounded-xl flex items-center justify-center",
+                            "border-2 border-rose-100 bg-white shadow-sm",
+                          )}
+                        >
+                          <Icon className={cn("w-4 h-4", config.color)} strokeWidth={1.5} />
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <span className="text-sm font-semibold text-rose-700">
+                    {alertPinnedEntries.length} 张警醒卡片
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-rose-600/70">
+                    {alertPinnedExpanded ? "收起" : "展开"}
+                  </span>
+                  <Pin className={cn(
+                    "w-4 h-4 text-rose-500 transition-transform duration-300",
+                    alertPinnedExpanded && "rotate-180"
+                  )} />
+                </div>
+              </button>
+
+              {/* Expanded Content - Alert Cards */}
+              <div className={cn(
+                "overflow-hidden transition-all duration-500 ease-out",
+                alertPinnedExpanded ? "mt-4 max-h-[9999px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {/* Group pinned entries by date */}
+                {Object.entries(
+                  alertPinnedEntries.reduce<Record<string, JournalEntry[]>>((groups, entry) => {
+                    const dateObj = new Date(entry.date)
+                    const dateKey = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" })
+                    if (!groups[dateKey]) {
+                      groups[dateKey] = []
+                    }
+                    groups[dateKey].push(entry)
+                    return groups
+                  }, {})
+                ).map(([dateLabel, entries]) => (
+                  <div key={dateLabel}>
+                    {/* Date Header for pinned section */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center">
+                        <Calendar className="w-3.5 h-3.5 text-rose-600" />
+                      </div>
+                      <span className="text-xs font-semibold text-rose-700 tracking-widest uppercase">{dateLabel}</span>
+                    </div>
+                    <div className="space-y-3 pl-4">
+                      {entries.map((entry) => (
+                        <TimelineCard
+                          key={entry.id}
+                          entry={entry}
+                          showAuthor={false}
+                          chatLayout={false}
+                          currentSpace={currentSpace}
+                          onPinned={(id, pinnedCollection) => {
+                            setData((prev) => prev.map((item) =>
+                              item.id === id ? { ...item, pinned_collection: pinnedCollection } : item
+                            ))
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Vertical Line Decoration — hidden in chat layout */}
           {!isChatLayout && (
             <div className="absolute left-[19px] top-2 bottom-0 w-[1px] bg-gradient-to-b from-muted-foreground/20 via-muted-foreground/10 to-transparent z-0" />
@@ -935,6 +1032,11 @@ function TimelineCard({
           "border-l-4 border-l-indigo-500",
           "bg-gradient-to-r from-indigo-50/50 to-white/60",
           "shadow-md hover:shadow-lg",
+        ],
+        pinnedCollection === "alert" && [
+          "border-l-4 border-l-rose-500",
+          "bg-gradient-to-r from-rose-50/50 to-white/60",
+          "shadow-md hover:shadow-lg",
         ]
       )}
     >
@@ -975,6 +1077,7 @@ function TimelineCard({
                     "p-2 -m-1 rounded-lg transition-colors cursor-pointer relative",
                     pinnedCollection === "lesson" && "hover:bg-amber-100/50",
                     pinnedCollection === "education" && "hover:bg-indigo-100/50",
+                    pinnedCollection === "alert" && "hover:bg-rose-100/50",
                     pinnedCollection === null && "hover:bg-muted/50",
                     isPinning && "opacity-60 pointer-events-none"
                   )}
@@ -986,6 +1089,7 @@ function TimelineCard({
                     "w-5 h-5 transition-colors",
                     pinnedCollection === "lesson" && "text-amber-500 fill-amber-500/20",
                     pinnedCollection === "education" && "text-indigo-500 fill-indigo-500/20",
+                    pinnedCollection === "alert" && "text-rose-500 fill-rose-500/20",
                     pinnedCollection === null && "text-muted-foreground/40"
                   )} strokeWidth={1.8} />
                 </button>
@@ -1011,6 +1115,7 @@ function TimelineCard({
                       "p-2 -m-1 rounded-lg transition-colors cursor-pointer relative",
                       pinnedCollection === "lesson" && "hover:bg-amber-100/50",
                       pinnedCollection === "education" && "hover:bg-indigo-100/50",
+                      pinnedCollection === "alert" && "hover:bg-rose-100/50",
                       pinnedCollection === null && "hover:bg-muted/50",
                       isPinning && "opacity-60 pointer-events-none"
                     )}
@@ -1022,6 +1127,7 @@ function TimelineCard({
                       "w-5 h-5 transition-colors",
                       pinnedCollection === "lesson" && "text-amber-500 fill-amber-500/20",
                       pinnedCollection === "education" && "text-indigo-500 fill-indigo-500/20",
+                      pinnedCollection === "alert" && "text-rose-500 fill-rose-500/20",
                       pinnedCollection === null && "text-muted-foreground/40"
                     )} strokeWidth={1.8} />
                   </button>

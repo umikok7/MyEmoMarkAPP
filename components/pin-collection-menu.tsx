@@ -2,10 +2,10 @@
 
 import * as React from "react"
 import { createPortal } from "react-dom"
-import { Sparkles, BookOpen, PinOff, Check } from "lucide-react"
+import { Sparkles, BookOpen, AlertTriangle, PinOff, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export type PinnedCollection = "lesson" | "education" | null
+export type PinnedCollection = "lesson" | "education" | "alert" | null
 
 interface PinCollectionMenuProps {
   anchorRect: DOMRect
@@ -38,6 +38,14 @@ const ITEMS: MenuItem[] = [
     icon: BookOpen,
     iconColor: "text-indigo-500",
     hoverBg: "hover:bg-indigo-50/70",
+    needsCurrentPinned: false,
+  },
+  {
+    collection: "alert",
+    label: "加入警醒卡片合集",
+    icon: AlertTriangle,
+    iconColor: "text-rose-500",
+    hoverBg: "hover:bg-rose-50/70",
     needsCurrentPinned: false,
   },
 ]
@@ -78,7 +86,7 @@ export function PinCollectionMenu({
     left = Math.max(margin, Math.min(left, viewportW - MENU_WIDTH - margin))
 
     let top = anchorRect.bottom + GAP
-    const estimatedHeight = currentCollection ? 168 : 128
+    const estimatedHeight = currentCollection ? 192 : 152
     if (top + estimatedHeight > viewportH - margin) {
       top = anchorRect.top - estimatedHeight - GAP
       if (top < margin) {
