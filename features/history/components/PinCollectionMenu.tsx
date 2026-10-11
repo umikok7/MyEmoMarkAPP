@@ -116,7 +116,7 @@ export function PinCollectionMenu({
               onClick={() => { onSelect(item.collection); }}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl",
-                "text-left text-sm font-medium text-foreground/80",
+                "text-left text-sm font-light text-foreground/80",
                 "transition-colors duration-150 cursor-pointer",
                 item.hoverBg
               )}

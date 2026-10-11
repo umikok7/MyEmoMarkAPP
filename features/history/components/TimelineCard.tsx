@@ -19,12 +19,10 @@ import { PinCollectionMenu } from "./PinCollectionMenu"
 interface TimelineCardProps {
   entry: JournalEntry
   space: HistorySpace
-  chatLayout: boolean
-  showAuthor: boolean
   onPinned?: (moodId: string, collection: PinnedCollection) => void
 }
 
-export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }: TimelineCardProps) {
+export function TimelineCard({ entry, space, onPinned }: TimelineCardProps) {
   const userId = useAuthStore((state) => state.userId)
   const coupleSpaceId = useSpaceStore((state) => state.coupleSpaceId)
 
@@ -39,7 +37,6 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
   const [isEditing, setIsEditing] = React.useState(false)
   const [editNote, setEditNote] = React.useState(entry.note)
   const [isLiked, setIsLiked] = React.useState(Boolean(entry.liked_by_user_id))
-  const [isLikeAnimating, setIsLikeAnimating] = React.useState(false)
   const [pinnedCollection, setPinnedCollection] = React.useState<PinnedCollection>(
     entry.pinned_collection ?? null
   )
@@ -48,8 +45,7 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
   const pinButtonRef = React.useRef<HTMLButtonElement | null>(null)
 
   const config = getMoodMeta(entry.mood as MoodType)
-  const MoodIcon = config?.icon
-  const isPartnerCard = chatLayout && entry.is_mine === false
+  const canEditEntry = entry.is_mine !== false
   const canLike = entry.is_mine === false
   const canPin = space === "couple" && entry.is_mine === true
 
@@ -60,9 +56,6 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
 
     const nextLiked = !isLiked
     setIsLiked(nextLiked)
-    setIsLikeAnimating(true)
-    window.setTimeout(() => { setIsLikeAnimating(false); }, 300)
-
     toggleLike.mutate(
       { moodId: entry.id, liked: nextLiked },
       {
@@ -122,6 +115,7 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
           onSuccess: () => {
             toast("已更新", { description: "已焕然一新。", duration: 2000 })
             setIsEditing(false)
+            setIsExpanded(false)
           },
           onError: () => {
             toast("保存失败", { description: "请稍后重试。", duration: 2200 })
@@ -139,6 +133,7 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
     event.stopPropagation()
     setEditNote(entry.note)
     setIsEditing(false)
+    setIsExpanded(false)
   }
 
   const handleConfirmDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -154,243 +149,111 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
     })
   }
 
-  const card = (
-    <SurfaceCard
-      onClick={() => {
-        if (isEditing) {return}
-        setIsExpanded(!isExpanded)
-      }}
-      variant="glass"
-      className={cn(
-        "cursor-pointer overflow-hidden transition-all duration-500",
-        isExpanded && "bg-white shadow-md",
-        chatLayout && isPartnerCard && "bg-rose-50/30 hover:bg-rose-50/50",
-        pinnedCollection === "lesson" && ["border-l-4 border-l-amber-500", "bg-gradient-to-r from-amber-50/50 to-white/60", "shadow-md hover:shadow-lg"],
-        pinnedCollection === "education" && ["border-l-4 border-l-indigo-500", "bg-gradient-to-r from-indigo-50/50 to-white/60", "shadow-md hover:shadow-lg"],
-        pinnedCollection === "alert" && ["border-l-4 border-l-rose-500", "bg-gradient-to-r from-rose-50/50 to-white/60", "shadow-md hover:shadow-lg"]
-      )}
-    >
-      <div className={cn("p-4 flex gap-3 items-start", chatLayout && isPartnerCard && "flex-row-reverse")}>
-        <div
-          className={cn(
-            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300",
-            config?.bg ?? "bg-stone-100",
-            chatLayout && isPartnerCard && "opacity-80"
-          )}
-        >
-          {MoodIcon && <MoodIcon className={cn("w-4 h-4", config?.color)} strokeWidth={1.5} />}
-        </div>
+  const editButtonLabel = updateMood.isPending ? "保存中" : isEditing ? "保存" : "编辑"
 
-        <div className={cn("flex-1 min-w-0 pt-0.5", chatLayout && isPartnerCard && "items-end")}>
-          {chatLayout && entry.is_mine !== undefined ? (
-            <div className={cn("flex items-center gap-2 mb-1.5", isPartnerCard ? "flex-row-reverse" : "flex-row")}>
-              <AuthorBadge isMine={entry.is_mine} />
-              <span className="font-mono text-xs font-semibold text-muted-foreground/60">{entry.time}</span>
+  const card = (
+    <div className="border-b border-stone-200/70">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => {
+          if (!isEditing) {
+            setIsExpanded(!isExpanded)
+          }
+        }}
+        onKeyDown={(event) => {
+          if ((event.key === "Enter" || event.key === " ") && !isEditing) {
+            event.preventDefault()
+            setIsExpanded(!isExpanded)
+          }
+        }}
+        className="flex w-full cursor-pointer items-stretch gap-3 py-1.5 text-left"
+      >
+        <span className={cn("my-0.5 w-1 shrink-0 rounded-full", config?.dot ?? "bg-stone-300")} aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <div className="flex min-h-5 items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className={cn("truncate text-sm font-semibold", config?.color)}>{config?.label ?? entry.mood}</h3>
+              {entry.is_mine !== undefined && <AuthorBadge isMine={entry.is_mine} />}
+              {isLiked && <Heart className="h-3 w-3 shrink-0 fill-rose-400/30 text-rose-400/70" aria-label="已读" />}
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <time className="font-mono text-xs text-muted-foreground/65">{entry.time}</time>
               {canPin && (
                 <button
                   ref={pinButtonRef}
                   type="button"
-                  onClick={(event) => { event.stopPropagation(); }}
+                  onClick={(event) => { event.stopPropagation() }}
                   {...longPressHandlers}
-                  className="p-2 -m-1 rounded-lg transition-colors cursor-pointer relative hover:bg-muted/50 disabled:opacity-60 disabled:pointer-events-none"
+                  className="rounded p-1 text-muted-foreground/50 hover:bg-stone-100 disabled:opacity-50"
                   title="长按选择合集"
                   disabled={pinToCollection.isPending}
                   aria-label="长按选择置顶合集"
                 >
-                  <Pin
-                    className={cn(
-                      "w-4 h-4 transition-colors",
-                      pinnedCollection === "lesson" && "text-amber-500 fill-amber-500/20",
-                      pinnedCollection === "education" && "text-indigo-500 fill-indigo-500/20",
-                      pinnedCollection === "alert" && "text-rose-500 fill-rose-500/20",
-                      pinnedCollection === null && "text-muted-foreground/40"
-                    )}
-                    strokeWidth={1.8}
-                  />
+                  <Pin className={cn("h-3.5 w-3.5", pinnedCollection && "fill-current")} />
                 </button>
               )}
-              {isLiked && (
-                <span className="flex items-center" title="Partner has seen this">
-                  <Heart className="w-3.5 h-3.5 text-rose-400/60 fill-rose-400/15" />
-                </span>
-              )}
             </div>
-          ) : (
-            <div className="flex justify-between items-center mb-1">
-              <h3 className={cn("text-sm font-bold tracking-wide", config?.color)}>
-                {config?.label ?? entry.mood}
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold font-mono text-muted-foreground/65">{entry.time}</span>
-                {canPin && (
-                  <button
-                    ref={pinButtonRef}
-                    type="button"
-                    onClick={(event) => { event.stopPropagation(); }}
-                    {...longPressHandlers}
-                    className="p-2 -m-1 rounded-lg transition-colors cursor-pointer relative hover:bg-muted/50 disabled:opacity-60 disabled:pointer-events-none"
-                    title="长按选择合集"
-                    disabled={pinToCollection.isPending}
-                    aria-label="长按选择置顶合集"
-                  >
-                    <Pin
-                      className={cn(
-                        "w-4 h-4 transition-colors",
-                        pinnedCollection === "lesson" && "text-amber-500 fill-amber-500/20",
-                        pinnedCollection === "education" && "text-indigo-500 fill-indigo-500/20",
-                        pinnedCollection === "alert" && "text-rose-500 fill-rose-500/20",
-                        pinnedCollection === null && "text-muted-foreground/40"
-                      )}
-                      strokeWidth={1.8}
-                    />
-                  </button>
-                )}
-                {isLiked && (
-                  <span className="flex items-center" title="Partner has seen this">
-                    <Heart className="w-3.5 h-3.5 text-rose-400/60 fill-rose-400/15" />
-                  </span>
-                )}
-                {showAuthor && entry.is_mine !== undefined && <AuthorBadge isMine={entry.is_mine} />}
+          </div>
+          {isEditing ? (
+            <div className="mt-0.5">
+              <textarea
+                value={editNote}
+                onChange={(event) => { setEditNote(event.target.value) }}
+                onClick={(event) => { event.stopPropagation() }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.stopPropagation()
+                    setEditNote(entry.note)
+                    setIsEditing(false)
+                  }
+                }}
+                rows={Math.min(8, Math.max(1, Math.ceil(editNote.length / 42)))}
+                autoFocus
+                className="mt-0.5 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-[inherit] text-xs font-normal leading-5 text-muted-foreground/75 whitespace-pre-wrap focus:outline-none"
+              />
+              <div className="mt-1 flex justify-end gap-3 text-[11px]">
+                <button type="button" className="text-muted-foreground" onClick={handleCancelEdit}>取消</button>
+                <button type="button" className="font-medium text-foreground/75" onClick={handleEditButtonClick} disabled={updateMood.isPending}>
+                  {editButtonLabel}
+                </button>
               </div>
             </div>
-          )}
-
-          {chatLayout && (
-            <h3 className={cn("font-bold tracking-wide mb-1 text-base text-right", isPartnerCard ? "text-right" : "text-left", config?.color)}>
-              {config?.label ?? entry.mood}
-            </h3>
-          )}
-
-          {isEditing ? (
-            <textarea
-              value={editNote}
-              onChange={(event) => { setEditNote(event.target.value); }}
-              onClick={(event) => { event.stopPropagation(); }}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  event.stopPropagation()
-                  setEditNote(entry.note)
-                  setIsEditing(false)
-                }
-              }}
-              rows={Math.min(6, Math.max(3, Math.ceil(editNote.length / 26)))}
-              autoFocus
-              className={cn(
-                  "w-full resize-none rounded-lg bg-white/50 px-3 py-2",
-                  "leading-relaxed font-normal text-sm text-foreground/70",
-                  "focus:outline-none transition-all duration-500",
-                chatLayout && isPartnerCard && "text-right"
-              )}
-            />
           ) : (
-            <p
-              className={cn(
-                "leading-relaxed transition-all duration-500 font-normal text-sm text-foreground/60",
-                isExpanded ? "line-clamp-none" : "line-clamp-2",
-                chatLayout && isPartnerCard && "text-right"
-              )}
-            >
-              {entry.note}
+            <p className={cn("mt-0.5 text-xs leading-5 text-muted-foreground/75", isExpanded ? "whitespace-pre-wrap" : "line-clamp-1")}>
+              {entry.note || "暂无记录"}
             </p>
           )}
-
-          {!isExpanded && (
-            <div className={cn("mt-2.5 flex gap-2 items-center", chatLayout && isPartnerCard ? "justify-end" : "justify-start")}>
-              <span className="px-2.5 py-1 rounded-full bg-secondary/30 text-secondary-foreground text-[10px]">
-                {entry.intensity * 10}% Intensity
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
-      <div
-        className={cn(
-          "bg-white/50 border-t border-black/[0.03] transition-all duration-500 ease-in-out overflow-y-auto",
-          isExpanded ? (isEditing ? "max-h-96 opacity-100" : "max-h-64 opacity-100") : "max-h-0 opacity-0 overflow-hidden"
-        )}
-      >
-        <div className="p-4 pt-3 space-y-3">
-          <div>
-            <div className={cn("flex justify-between text-muted-foreground mb-1.5 px-1 text-xs")}>
-              <span>Intensity</span>
-              <span>{entry.intensity * 10}%</span>
-            </div>
-            <div className="h-1 w-full bg-stone-200/60 rounded-full overflow-hidden">
-              <div className="h-full bg-stone-400/60 rounded-full" style={{ width: `${entry.intensity * 10}%` }} />
-            </div>
-          </div>
-
-          {entry.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {entry.tags.map((tag) => (
-                <span key={tag} className="px-2.5 py-1 rounded-full bg-stone-100/60 text-muted-foreground/70 text-xs">
-                  #{tag}
-                </span>
-              ))}
+      {isExpanded && !isEditing && (
+        <div className="ml-4 space-y-2 pb-2.5 pl-3">
+          {!isEditing && entry.tags.length > 0 && (
+            <div className="flex flex-wrap gap-x-2 gap-y-1">
+              {entry.tags.map((tag) => <span key={tag} className="text-[11px] text-muted-foreground/70">#{tag}</span>)}
             </div>
           )}
-
-          <div className="pt-1">
-            <div className="h-px w-full bg-stone-200/60" />
-            <div className="mt-2.5 flex items-center justify-between tracking-wide text-xs">
-              {canLike && (
-                <button
-                  type="button"
-                  className={cn(
-                    "flex items-center gap-1.5 min-h-[36px] min-w-[36px] px-2.5 rounded-full",
-                    "transition-all duration-300 active:scale-[0.95] cursor-pointer",
-                    isLiked ? "text-rose-400/80" : "text-muted-foreground/50 hover:text-rose-300/70"
-                  )}
-                  onClick={handleLike}
-                >
-                  <Heart
-                    className={cn("w-3.5 h-3.5 transition-all duration-300", isLikeAnimating && "scale-125", isLiked && "fill-rose-400/30")}
-                    strokeWidth={isLiked ? 1.5 : 1.8}
-                  />
+          <div className="flex items-center justify-between gap-3 text-[8px]">
+            {canLike ? (
+              <button type="button" className={cn("inline-flex min-h-8 items-center gap-1 text-muted-foreground/60", isLiked && "text-rose-500")} onClick={handleLike}>
+                <Heart className={cn("h-3 w-3", isLiked && "fill-current")} />
+                {isLiked ? "已读" : "标记已读"}
+              </button>
+            ) : <span />}
+            <div className="flex items-center gap-3">
+              {canEditEntry && (
+                <button type="button" className="font-medium text-foreground/75" onClick={handleEditButtonClick} disabled={updateMood.isPending}>
+                  {editButtonLabel}
                 </button>
               )}
-              <div className="flex items-center gap-4">
-                {!isPartnerCard && isEditing && (
-                  <button
-                    type="button"
-                    className="text-muted-foreground/50 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                    onClick={handleCancelEdit}
-                  >
-                    Cancel
-                  </button>
-                )}
-                {!isPartnerCard && (
-                  <button
-                    type="button"
-                    className={cn(
-                      "transition-opacity duration-300 active:scale-[0.98] cursor-pointer",
-                      isEditing ? "text-foreground/80 font-medium" : "text-muted-foreground/70 hover:text-foreground/70"
-                    )}
-                    onClick={handleEditButtonClick}
-                    disabled={updateMood.isPending}
-                  >
-                    {isEditing ? (updateMood.isPending ? "Saving..." : "Save") : "Edit entry"}
-                  </button>
-                )}
-                {!isPartnerCard && !isEditing && (
-                  <button
-                    type="button"
-                    className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      setIsDeleteOpen(true)
-                    }}
-                  >
-                    Delete entry
-                  </button>
-                )}
-              </div>
+              {canEditEntry && (
+                <button type="button" className="text-muted-foreground/60" onClick={(event) => { event.stopPropagation(); setIsDeleteOpen(true) }}>删除</button>
+              )}
             </div>
           </div>
         </div>
-
-      </div>
+      )}
 
       {isDeleteOpen &&
         createPortal(
@@ -441,37 +304,8 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
           onClose={() => { setIsPinMenuOpen(false); }}
         />
       )}
-    </SurfaceCard>
-  )
-
-  // 全局统一卡片几何：宽 = 容器 - 5rem，chat/时间线布局尺寸一致
-  if (!chatLayout) {
-    return (
-      <div className="w-[calc(100%-5rem)] mx-auto py-1.5">{card}</div>
-    )
-  }
-
-  return (
-    <div className="relative py-1.5">
-      {/* 两侧轨道装饰线，绝对定位不挤占卡片宽度 */}
-      <div className="absolute left-3 top-0 bottom-0 w-px bg-stone-200/70" />
-      <div className="absolute right-3 top-0 bottom-0 w-px bg-rose-200/60" />
-      <div
-        className={cn(
-          "absolute top-[22px] w-2 h-2 rounded-full ring-2 ring-white z-10",
-          isPartnerCard ? "right-[10px] bg-rose-300/80" : "left-[10px] bg-stone-300/90"
-        )}
-      />
-
-      {/* 等宽卡片 + 轻微左右偏移（32px），避免满幅对甩 */}
-      <div
-        className={cn(
-          "relative w-[calc(100%-5rem)] min-w-0",
-          isPartnerCard ? "ml-auto mr-6" : "mr-auto ml-6"
-        )}
-      >
-        {card}
-      </div>
     </div>
   )
+
+  return <div className="w-full">{card}</div>
 }

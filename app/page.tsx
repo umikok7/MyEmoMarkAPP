@@ -402,7 +402,7 @@ export default function HomePage() {
                     className={cn(
                       "flex flex-col items-center gap-1.5 flex-1 py-3 rounded-xl transition-all duration-300 min-h-[70px]",
                       isSelected
-                        ? "bg-white text-foreground shadow-md ring-1 ring-black/5"
+                        ? " text-foreground ring-1 ring-black/5"
                         : "text-muted-foreground/70 hover:bg-white/50"
                     )}
                   >
