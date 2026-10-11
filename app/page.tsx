@@ -40,18 +40,18 @@ const TasksSummaryPanel = ({
   progressPercent: number
   onSelectFilter: (filter: TaskFilterKind) => void
 }) => (
-  <div className="mt-2 bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-stone-100">
+  <div className="mt-2 rounded-2xl p-4">
     <div className="grid grid-cols-2 gap-3">
       <button
         onClick={() => { onSelectFilter("all"); }}
-        className="col-span-2 bg-stone-50 rounded-xl p-4 text-left hover:bg-stone-100 transition-colors cursor-pointer"
+        className="col-span-2 bg-stone-100 rounded-xl p-4 text-left hover:bg-stone-200 transition-colors cursor-pointer"
       >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">全部待办</p>
             <p className="text-5xl font-bold text-stone-800 mt-1">{totalCount}</p>
           </div>
-          <div className="w-14 h-14 bg-stone-200 rounded-full flex items-center justify-center">
+          <div className="w-14 h-14 bg-stone-200 rounded-xl flex items-center justify-center">
             <ListTodo className="w-7 h-7 text-stone-600" />
           </div>
         </div>
@@ -70,7 +70,7 @@ const TasksSummaryPanel = ({
 
       <button
         onClick={() => { onSelectFilter("normal"); }}
-        className="bg-stone-50 rounded-xl p-3 text-left hover:bg-stone-100 transition-colors cursor-pointer"
+        className="bg-stone-100 rounded-xl p-3 text-left hover:bg-stone-200 transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">未置顶</span>
@@ -89,7 +89,7 @@ const TasksSummaryPanel = ({
         <p className="text-3xl font-bold text-stone-800">{doneCount}</p>
       </button>
 
-      <div className="col-span-2 bg-stone-100 rounded-xl p-3">
+      <div className="col-span-2  rounded-xl p-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">进度条</span>
           <span className="text-sm font-bold text-stone-700">{progressPercent}%</span>
@@ -106,7 +106,7 @@ const TasksSummaryPanel = ({
 )
 
 const MoodSummaryPanel = ({ selectedMood }: { selectedMood: MoodType | null }) => (
-  <div className="mt-2 bg-white rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-stone-100">
+  <div className="mt-2  rounded-2xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] border border-stone-200">
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className="flex -space-x-2">
@@ -400,7 +400,7 @@ export default function HomePage() {
                       setIsNoteOpen(true)
                     }}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 flex-1 py-3 rounded-2xl transition-all duration-300 min-h-[70px]",
+                      "flex flex-col items-center gap-1.5 flex-1 py-3 rounded-xl transition-all duration-300 min-h-[70px]",
                       isSelected
                         ? "bg-white text-foreground shadow-md ring-1 ring-black/5"
                         : "text-muted-foreground/70 hover:bg-white/50"

@@ -101,8 +101,8 @@ export function PinCollectionMenu({
     >
       <div
         onClick={(event) => { event.stopPropagation(); }}
-        className="absolute bg-white rounded-2xl shadow-xl ring-1 ring-black/5 p-1.5 min-w-[240px] animate-[fade-scale_0.18s_ease-out]"
-        style={{ top: position.top, left: position.left }}
+        className="absolute bg-white rounded-lg shadow-xl ring-1 ring-black/5 p-1.5 min-w-[160px] animate-[fade-scale_0.18s_ease-out]"
+        style={{ top: position.top, left: position.left}}
       >
         {MENU_ITEMS.map((item) => {
           const Icon = item.icon
@@ -113,7 +113,7 @@ export function PinCollectionMenu({
               type="button"
               onClick={() => { onSelect(item.collection); }}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl",
                 "text-left text-sm font-medium text-foreground/80",
                 "transition-colors duration-150 cursor-pointer",
                 item.hoverBg
