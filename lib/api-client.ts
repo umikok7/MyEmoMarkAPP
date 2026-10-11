@@ -63,4 +63,7 @@ export const apiPatch = <T>(path: string, body?: unknown) =>
 export const apiPut = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "PUT", body })
 
-export const apiDelete = <T>(path: string) => request<T>(path, { method: "DELETE" })
+export const apiDelete = <T>(
+  path: string,
+  params?: Record<string, string | number | boolean | null | undefined>
+) => request<T>(path, { method: "DELETE", params })

@@ -53,7 +53,7 @@ export const useMonthInsights = (selectedDate: Date) => {
   })
 
   const tasksQuery = useQuery({
-    queryKey: ["tasks", "month", userId, year, month],
+    queryKey: ["tasks", "month", "insights", userId, year, month],
     queryFn: () => fetchMonthTasks(year, month, userId ?? undefined),
   })
 
@@ -62,6 +62,7 @@ export const useMonthInsights = (selectedDate: Date) => {
     suggestion: analyticsQuery.data?.suggestion ?? "",
     monthLabel: analyticsQuery.data?.month ?? "",
     calendar: buildMonthCalendar(year, selectedDate.getMonth(), tasksQuery.data?.tasks ?? []),
+    checkins: tasksQuery.data?.tasks ?? [],
     isLoading: analyticsQuery.isLoading || tasksQuery.isLoading,
   }
 }

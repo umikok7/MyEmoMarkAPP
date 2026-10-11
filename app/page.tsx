@@ -16,6 +16,7 @@ import { MoodSpaceSelector, useCoupleSpaces, useSpaceStore } from "@/features/co
 import { MOODS, getMoodMeta, useSaveMood, type MoodType } from "@/features/moods"
 import {
   SwipeableTodoItem,
+  NewTaskSheet,
   useDayTasks,
   useTaskMutations,
   type TaskFilterKind,
@@ -154,9 +155,7 @@ export default function HomePage() {
   const [isMoodExpanded, setIsMoodExpanded] = React.useState(false)
   const [tasksFilter, setTasksFilter] = React.useState<TaskFilterKind | null>(null)
   const [isAddTaskOpen, setIsAddTaskOpen] = React.useState(false)
-  const [newTaskTitle, setNewTaskTitle] = React.useState("")
   const noteOpenBeforeMoodRef = React.useRef(false)
-  const addTaskInputRef = React.useRef<HTMLInputElement | null>(null)
 
   const { userId, isLoggedIn } = useAuthStore()
   const { space, coupleSpaceId, setSpace } = useSpaceStore()
@@ -180,12 +179,6 @@ export default function HomePage() {
       .finally(() => { localStorage.setItem(LAST_CLEANUP_KEY, today); })
   }, [])
 
-  React.useEffect(() => {
-    if (isAddTaskOpen && addTaskInputRef.current) {
-      window.setTimeout(() => { addTaskInputRef.current?.focus(); }, 100)
-    }
-  }, [isAddTaskOpen])
-
   const handleSaveMood = () => {
     if (!selectedMood || isSaving) {return}
     saveMood.mutate(
@@ -202,14 +195,6 @@ export default function HomePage() {
         },
       }
     )
-  }
-
-  const handleAddTask = () => {
-    const title = newTaskTitle.trim()
-    if (!title || !userId) {return}
-    setNewTaskTitle("")
-    setIsAddTaskOpen(false)
-    addTask.mutate(title)
   }
 
   const completedWithPinned =
@@ -534,70 +519,10 @@ export default function HomePage() {
         )}
 
         {isAddTaskOpen && (
-          <div className="fixed inset-0 z-[70] flex items-end justify-center">
-            <div
-              className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300"
-              onClick={() => {
-                setIsAddTaskOpen(false)
-                setNewTaskTitle("")
-              }}
-            />
-            <div
-              className="relative w-full max-w-md bg-[#fffdfa] rounded-t-[2rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] transition-transform duration-300 ease-out"
-              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-            >
-              <div className="px-6 pt-6 pb-8 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm tracking-[0.3em] uppercase text-muted-foreground/70">New Task</h3>
-                  <button
-                    onClick={() => {
-                      setIsAddTaskOpen(false)
-                      setNewTaskTitle("")
-                    }}
-                    className="text-muted-foreground/60 hover:text-foreground/80 transition"
-                  >
-                    <span className="text-2xl font-normal leading-none">×</span>
-                  </button>
-                </div>
-                <input
-                  ref={addTaskInputRef}
-                  type="text"
-                  value={newTaskTitle}
-                  onChange={(event) => { setNewTaskTitle(event.target.value); }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault()
-                      handleAddTask()
-                    }
-                    if (event.key === "Escape") {
-                      setIsAddTaskOpen(false)
-                      setNewTaskTitle("")
-                    }
-                  }}
-                  placeholder="What needs to be done?"
-                  className="w-full bg-white/60 border border-black/[0.06] rounded-2xl px-5 py-4 text-[15px] font-light text-foreground/90 placeholder:text-muted-foreground/40 shadow-sm focus:ring-1 focus:ring-black/10 focus:outline-none focus:border-black/10 transition-all focus:bg-white"
-                />
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    onClick={() => {
-                      setIsAddTaskOpen(false)
-                      setNewTaskTitle("")
-                    }}
-                    className="flex-1 rounded-full bg-white/80 text-foreground/70 hover:bg-white border border-black/[0.06] shadow-sm"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleAddTask}
-                    disabled={!newTaskTitle.trim()}
-                    className="flex-1 rounded-full bg-foreground/90 text-white hover:bg-foreground shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <NewTaskSheet
+            onClose={() => { setIsAddTaskOpen(false) }}
+            onSubmit={(title) => { if (userId) addTask.mutate(title) }}
+          />
         )}
 
         <OnboardingGuide isLoggedIn={isLoggedIn} />

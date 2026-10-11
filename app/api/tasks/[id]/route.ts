@@ -6,6 +6,7 @@ import { fail, getSessionUserId, ok, parseJson, resolveUserId } from "@/lib/serv
 type TaskUpdatePayload = {
   is_done?: boolean
   is_pinned?: boolean
+  task_source?: "home" | "insights"
 }
 
 export async function PATCH(
@@ -23,6 +24,7 @@ export async function PATCH(
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
+  const taskSource = body.task_source === "insights" ? "insights" : "home"
 
   const updateData: { is_done?: boolean; is_pinned?: boolean; completed_at?: Date | null } = {}
   if (typeof body.is_done === "boolean") {
@@ -41,6 +43,7 @@ export async function PATCH(
     where: {
       id: taskId,
       user_id: userId,
+      task_source: taskSource,
       is_deleted: false,
     },
     data: updateData,
@@ -76,11 +79,13 @@ export async function DELETE(
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
+  const taskSource = request.nextUrl.searchParams.get("source") === "insights" ? "insights" : "home"
 
   const record = await prisma.daily_tasks.update({
     where: {
       id: taskId,
       user_id: userId,
+      task_source: taskSource,
       is_deleted: false,
     },
     data: {
