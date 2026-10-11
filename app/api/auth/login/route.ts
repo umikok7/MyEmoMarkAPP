@@ -1,6 +1,5 @@
 import bcrypt from "bcryptjs"
 import { v4 as uuidv4 } from "uuid"
-import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import {
   buildSessionCookieOptions,
@@ -17,12 +16,12 @@ type LoginPayload = {
 
 export async function POST(request: Request) {
   const body = await parseJson<LoginPayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const account = body.account?.trim()
   const password = body.password
 
-  if (!account || !password) return fail(400, "Account and password required")
+  if (!account || !password) {return fail(400, "Account and password required")}
 
   const user = await prisma.users.findFirst({
     where: {
@@ -36,12 +35,12 @@ export async function POST(request: Request) {
   console.log("Password input:", password)
   console.log("Hash from DB:", user?.password_hash ? "exists" : "missing")
 
-  if (!user) return fail(401, "User not found")
+  if (!user) {return fail(401, "User not found")}
 
   const match = await bcrypt.compare(password, user.password_hash)
   console.log("Bcrypt match:", match)
 
-  if (!match) return fail(401, "Invalid password")
+  if (!match) {return fail(401, "Invalid password")}
 
   const sessionId = uuidv4()
   const expiresAt = new Date(Date.now() + SESSION_COOKIE_MAX_AGE * 1000)
@@ -63,7 +62,7 @@ export async function POST(request: Request) {
     },
     session_id: sessionId,
     expires_at: expiresAt,
-  }) as NextResponse
+  })
 
   response.cookies.set("session_id", sessionId, buildSessionCookieOptions())
   return response

@@ -2,7 +2,6 @@ import crypto from "crypto"
 
 const ALGORITHM = "aes-256-gcm"
 const IV_LENGTH = 12
-const TAG_LENGTH = 16
 
 function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY
@@ -14,7 +13,7 @@ function getEncryptionKey(): Buffer {
 }
 
 export function encrypt(text: string): string {
-  if (!text) return text
+  if (!text) {return text}
 
   const key = getEncryptionKey()
   const iv = crypto.randomBytes(IV_LENGTH)
@@ -28,7 +27,7 @@ export function encrypt(text: string): string {
 }
 
 export function decrypt(encryptedText: string): string {
-  if (!encryptedText) return encryptedText
+  if (!encryptedText) {return encryptedText}
 
   try {
     const key = getEncryptionKey()
@@ -54,7 +53,7 @@ export function decrypt(encryptedText: string): string {
     decrypted += decipher.final("utf8")
 
     return decrypted
-  } catch (error) {
+  } catch {
     // 解密失败时返回原文（兼容存量数据）
     return encryptedText
   }
@@ -67,7 +66,7 @@ export function encryptObject<T extends Record<string, unknown>>(
   const result = { ...obj }
   for (const field of fieldsToEncrypt) {
     if (result[field] && typeof result[field] === "string") {
-      result[field] = encrypt(result[field] as string) as T[typeof field]
+      result[field] = encrypt(result[field]) as T[typeof field]
     }
   }
   return result
@@ -80,7 +79,7 @@ export function decryptObject<T extends Record<string, unknown>>(
   const result = { ...obj }
   for (const field of fieldsToDecrypt) {
     if (result[field] && typeof result[field] === "string") {
-      result[field] = decrypt(result[field] as string) as T[typeof field]
+      result[field] = decrypt(result[field]) as T[typeof field]
     }
   }
   return result

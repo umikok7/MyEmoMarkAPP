@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { buildSessionCookieOptions, ok } from "@/lib/server/helpers"
 
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const response = ok(null) as NextResponse
+  const response = ok(null)
   response.cookies.set("session_id", "", buildSessionCookieOptions(0))
   return response
 }

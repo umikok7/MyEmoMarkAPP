@@ -28,14 +28,14 @@ export function useLongPress(
 
   const handlePointerDown = React.useCallback(
     (event: React.PointerEvent) => {
-      if (event.button !== 0 && event.pointerType === "mouse") return
+      if (event.button !== 0 && event.pointerType === "mouse") {return}
       triggeredRef.current = false
       startPosRef.current = { x: event.clientX, y: event.clientY }
       pointerIdRef.current = event.pointerId
 
       timerRef.current = window.setTimeout(() => {
         triggeredRef.current = true
-        if (navigator.vibrate) navigator.vibrate(15)
+        if (navigator.vibrate) {navigator.vibrate(15)}
         onLongPress(event)
         cancel()
       }, delay)
@@ -45,7 +45,7 @@ export function useLongPress(
 
   const handlePointerMove = React.useCallback(
     (event: React.PointerEvent) => {
-      if (timerRef.current === null || !startPosRef.current) return
+      if (timerRef.current === null || !startPosRef.current) {return}
       const dx = event.clientX - startPosRef.current.x
       const dy = event.clientY - startPosRef.current.y
       if (Math.hypot(dx, dy) > movementThreshold) {

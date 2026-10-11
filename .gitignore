@@ -45,3 +45,5 @@ next-env.d.ts
 /.shared/
 /.github/
 /.opencode/
+
+/react-vite-ts-bootstrap

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { decrypt, encrypt } from "@/lib/encryption"
 import { fail, getSessionUserId, ok, parseJson, resolveUserId } from "@/lib/server/helpers"
@@ -21,7 +21,7 @@ async function validateCoupleAccess(
   requestUserId: string,
   targetUserId: string
 ): Promise<boolean> {
-  if (requestUserId === targetUserId) return true
+  if (requestUserId === targetUserId) {return true}
 
   const coupleSpace = await prisma.couple_spaces.findFirst({
     where: {
@@ -43,10 +43,10 @@ export async function POST(
 ) {
   const resolvedParams = await Promise.resolve(params)
   const blockId = resolvedParams.id
-  if (!blockId) return fail(400, "Block ID is required")
+  if (!blockId) {return fail(400, "Block ID is required")}
 
   const body = await parseJson<DailyBlockUpdatePayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const hasTimeUpdate =
     typeof body.start_minute === "number" || typeof body.end_minute === "number"
@@ -69,7 +69,7 @@ export async function POST(
     typeof body.color_tag === "string" ||
     hasTimeUpdate
 
-  if (!hasUpdates) return fail(400, "No updates provided")
+  if (!hasUpdates) {return fail(400, "No updates provided")}
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
@@ -84,7 +84,7 @@ export async function POST(
     select: { user_id: true },
   })
 
-  if (!existingBlock) return fail(404, "Block not found")
+  if (!existingBlock) {return fail(404, "Block not found")}
 
   // 验证情侣关系
   if (sessionUserId && sessionUserId !== "guest" && sessionUserId !== existingBlock.user_id) {
@@ -137,7 +137,7 @@ export async function DELETE(
 ) {
   const resolvedParams = await Promise.resolve(params)
   const blockId = resolvedParams.id
-  if (!blockId) return fail(400, "Block ID is required")
+  if (!blockId) {return fail(400, "Block ID is required")}
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
@@ -152,7 +152,7 @@ export async function DELETE(
     select: { user_id: true },
   })
 
-  if (!existingBlock) return fail(404, "Block not found")
+  if (!existingBlock) {return fail(404, "Block not found")}
 
   // 验证情侣关系
   if (sessionUserId && sessionUserId !== "guest" && sessionUserId !== existingBlock.user_id) {
@@ -164,7 +164,7 @@ export async function DELETE(
     return fail(401, "Authentication required")
   }
 
-  const record = await prisma.daily_time_blocks.update({
+  await prisma.daily_time_blocks.update({
     where: {
       id: blockId,
       is_deleted: false,

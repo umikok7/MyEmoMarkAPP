@@ -22,14 +22,14 @@ export const parseJson = async <T>(request: Request): Promise<T | null> => {
 }
 
 export const getSessionUserId = async (sessionId: string | null | undefined) => {
-  if (!sessionId) return null
+  if (!sessionId) {return null}
 
   const session = await prisma.user_sessions.findUnique({
     where: { id: sessionId },
     select: { user_id: true, expires_at: true },
   })
 
-  if (!session) return null
+  if (!session) {return null}
 
   const expiresAt = new Date(session.expires_at)
   if (Number.isNaN(expiresAt.getTime()) || expiresAt < new Date()) {
@@ -40,8 +40,8 @@ export const getSessionUserId = async (sessionId: string | null | undefined) => 
 }
 
 export const normalizeTags = (tags?: string[] | null | unknown) => {
-  if (!tags) return []
-  if (Array.isArray(tags)) return tags.filter(Boolean)
+  if (!tags) {return []}
+  if (Array.isArray(tags)) {return tags.filter(Boolean)}
   return []
 }
 
@@ -125,7 +125,7 @@ export const buildAnalytics = (
     const date = new Date(record.created_at)
     const dateKey = date.toISOString().split("T")[0]
 
-    if (!dayMap[dateKey] || new Date(record.created_at) > new Date(dayMap[dateKey].intensity as unknown as string)) {
+    if (!dayMap[dateKey] || new Date(record.created_at) > new Date(dayMap[dateKey].intensity)) {
       dayMap[dateKey] = {
         mood: record.mood_type,
         intensity: record.intensity,

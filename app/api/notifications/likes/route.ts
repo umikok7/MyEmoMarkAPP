@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { decrypt } from "@/lib/encryption"
 import { getSessionUserId, ok } from "@/lib/server/helpers"
@@ -61,12 +61,12 @@ export async function GET(request: NextRequest) {
 
     coupleLikerIds = coupleMoodRecords
       .filter((r) => r.liked_by_user_id)
-      .map((r) => r.liked_by_user_id as string)
+      .flatMap((r) => (r.liked_by_user_id ? [r.liked_by_user_id] : []))
   }
 
   const personalLikerIds = moodRecords
     .filter((r) => r.liked_by_user_id)
-    .map((r) => r.liked_by_user_id as string)
+    .flatMap((r) => (r.liked_by_user_id ? [r.liked_by_user_id] : []))
 
   const allLikerIds = [...personalLikerIds, ...coupleLikerIds]
   const allLikers = await prisma.users.findMany({
@@ -101,8 +101,8 @@ export async function GET(request: NextRequest) {
   })
 
   const allLikes = [...personalLikes, ...coupleLikes].sort((a, b) => {
-    if (!a.likedAt) return 1
-    if (!b.likedAt) return -1
+    if (!a.likedAt) {return 1}
+    if (!b.likedAt) {return -1}
     return new Date(b.likedAt).getTime() - new Date(a.likedAt).getTime()
   })
 

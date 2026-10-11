@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
 import {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await parseJson<CreateSpacePayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)

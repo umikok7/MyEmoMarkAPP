@@ -3,32 +3,23 @@
 :root {
   --background: #fffdfa; /* Even warmer, lighter rice paper */
   --foreground: #5c5c5c; /* Lighter charcoal for less contrast */
-
-  --card: #ffffff;
+  --card: #fff;
   --card-foreground: #5c5c5c;
-
-  --popover: #ffffff;
+  --popover: #fff;
   --popover-foreground: #5c5c5c;
-
   --primary: #e8dcd8; /* Very subtle dusty pink/beige */
   --primary-foreground: #5c5c5c;
-
   --secondary: #dcece6; /* Very subtle sage */
   --secondary-foreground: #4a5c54;
-
   --muted: #f7f5f2;
   --muted-foreground: #a3a3a3;
-
   --accent: #fff9f5;
   --accent-foreground: #5c5c5c;
-
   --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-
+  --destructive-foreground: #fff;
   --border: #f0ebe6; /* Very soft border */
   --input: #f0ebe6;
   --ring: #e8dcd8;
-
   --radius: 2rem; /* Extremely rounded */
 }
 
@@ -54,10 +45,8 @@
   --color-ring: var(--ring);
   --radius-xl: var(--radius);
   --radius-2xl: 4rem;
-
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-
   --animate-fade-in: fade-in 0.6s ease-out forwards;
   --animate-slide-up: slide-up 0.8s ease-out forwards;
 
@@ -65,13 +54,29 @@
     from { opacity: 0; }
     to { opacity: 1; }
   }
+
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  @keyframes fadeScale {
-    from { opacity: 0; transform: scale(0.96); }
-    to { opacity: 1; transform: scale(1); }
+
+  @keyframes fade-scale {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }
 
@@ -115,10 +120,10 @@ body {
    We set a minimum font-size for form controls on small screens and
    disable text-size-adjust to keep layout stable in PWAs. */
 html {
-  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
-@media (max-width: 812px) {
+@media (width <= 812px) {
   input,
   textarea,
   select,

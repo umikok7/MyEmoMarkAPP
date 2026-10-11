@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import type { InputJsonValue } from "@/lib/generated/prisma/internal/prismaNamespace"
 import { encrypt, decrypt } from "@/lib/encryption"
@@ -24,14 +24,14 @@ export async function PUT(
 ) {
   const resolvedParams = await Promise.resolve(params)
   const recordId = resolvedParams.id
-  if (!recordId) return fail(400, "Record ID is required")
+  if (!recordId) {return fail(400, "Record ID is required")}
 
   const body = await parseJson<CoupleMoodUpdatePayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const moodType = body.mood_type?.trim()
   const intensity = Number(body.intensity)
-  if (!moodType) return fail(400, "mood_type is required")
+  if (!moodType) {return fail(400, "mood_type is required")}
   if (!Number.isFinite(intensity) || intensity < 1 || intensity > 10) {
     return fail(400, "intensity must be between 1 and 10")
   }
@@ -113,7 +113,7 @@ export async function DELETE(
 ) {
   const resolvedParams = await Promise.resolve(params)
   const recordId = resolvedParams.id
-  if (!recordId) return fail(400, "Record ID is required")
+  if (!recordId) {return fail(400, "Record ID is required")}
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
@@ -160,6 +160,6 @@ export async function DELETE(
     },
   })
 
-  if (!result.count) return fail(404, "Record not found")
+  if (!result.count) {return fail(404, "Record not found")}
   return ok({ deleted_id: recordId })
 }
