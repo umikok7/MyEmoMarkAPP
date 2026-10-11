@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { HeartHandshake, Heart, XCircle } from "lucide-react"
 import { useAuthStore } from "@/store/use-auth-store"
+import { SurfaceCard } from "@/components/ui/surface-card"
 import { useCoupleSpaces, useRespondInvitation } from "../hooks"
 
 interface InviteAcceptModalProps {
@@ -44,14 +45,9 @@ export function InviteAcceptModal({ isOpen, onSettled }: InviteAcceptModalProps)
         className="absolute inset-0 bg-stone-200/40 backdrop-blur-sm"
         onClick={() => { void handleRespond("rejected"); }}
       />
-      <div
-        className={cn(
-          "relative w-[92%] max-w-sm rounded-[32px] bg-[#fdfbf7]",
-          "shadow-[0_20px_60px_-20px_rgba(0,0,0,0.15)]",
-          "ring-1 ring-stone-200/50",
-          "p-8 animate-[fade-scale_0.3s_ease-out]",
-          "transition-all duration-500"
-        )}
+      <SurfaceCard
+        variant="solid"
+        className="relative w-[92%] max-w-sm p-8 animate-[fade-scale_0.3s_ease-out] transition-all duration-500"
         onClick={(event) => { event.stopPropagation(); }}
       >
         <div className="flex flex-col items-center text-center">
@@ -106,7 +102,7 @@ export function InviteAcceptModal({ isOpen, onSettled }: InviteAcceptModalProps)
             </button>
           </div>
         </div>
-      </div>
+      </SurfaceCard>
     </div>,
     document.body
   )

@@ -4,6 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { SurfaceCard } from "@/components/ui/surface-card"
 import { toast } from "sonner"
 import { Mail, AlertCircle, CheckCircle2, UserPlus, X } from "lucide-react"
 import { useCreateInvitation, useCoupleSpaces } from "../hooks"
@@ -124,14 +125,9 @@ export function InvitePartnerModal({ isOpen, onClose }: InvitePartnerModalProps)
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div className="absolute inset-0 bg-stone-200/40 backdrop-blur-sm" onClick={handleClose} />
-      <div
-        className={cn(
-          "relative w-[92%] max-w-sm rounded-[32px] bg-[#fdfbf7]",
-          "shadow-[0_20px_60px_-20px_rgba(0,0,0,0.15)]",
-          "ring-1 ring-stone-200/50",
-          "p-8 animate-[fade-scale_0.3s_ease-out]",
-          "transition-all duration-500"
-        )}
+      <SurfaceCard
+        variant="solid"
+        className="relative w-[92%] max-w-sm p-8 animate-[fade-scale_0.3s_ease-out] transition-all duration-500"
         onClick={(event) => { event.stopPropagation(); }}
       >
         <div className="flex items-center justify-between mb-6">
@@ -236,7 +232,7 @@ export function InvitePartnerModal({ isOpen, onClose }: InvitePartnerModalProps)
             </Button>
           </div>
         </form>
-      </div>
+      </SurfaceCard>
     </div>,
     document.body
   )

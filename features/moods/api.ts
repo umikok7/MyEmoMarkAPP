@@ -58,15 +58,6 @@ export const unlikeMood = (moodId: string, space: "personal" | "couple") =>
     ? apiDelete(`/couple-moods/${moodId}/like`)
     : apiDelete(`/moods/${moodId}/like`)
 
-export const updateMood = (
-  moodId: string,
-  space: "personal" | "couple",
-  patch: { mood_type: MoodType; intensity: number; note: string; tags: string[] }
-) =>
-  space === "couple"
-    ? apiPatch<{ record: ServerMoodRecord }>(`/couple-moods/${moodId}`, patch)
-    : apiPatch<{ record: ServerMoodRecord }>(`/moods/${moodId}`, patch)
-
 export const deleteMood = (moodId: string, space: "personal" | "couple") =>
   space === "couple"
     ? apiDelete(`/couple-moods/${moodId}`)

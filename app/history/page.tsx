@@ -204,7 +204,7 @@ export default function HistoryPage() {
                 <ArrowLeft className="w-5 h-5 text-muted-foreground" />
               </Button>
             </Link>
-            <h1 className="text-2xl font-normal text-foreground tracking-wide">情绪回顾</h1>
+            <h1 className="text-2xl font-normal text-foreground tracking-wide">回顾</h1>
           </div>
           <LikeNotifications />
         </header>

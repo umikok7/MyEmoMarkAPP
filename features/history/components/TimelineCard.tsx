@@ -4,7 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { Heart, Pin } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Card } from "@/components/ui/card"
+import { SurfaceCard } from "@/components/ui/surface-card"
 import { toast } from "sonner"
 import { useLongPress } from "@/lib/hooks/use-long-press"
 import { getMoodMeta, type MoodType } from "@/features/moods"
@@ -37,9 +37,7 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
   const [isExpanded, setIsExpanded] = React.useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
-  const [editIntensity, setEditIntensity] = React.useState(entry.intensity)
   const [editNote, setEditNote] = React.useState(entry.note)
-  const [editTags, setEditTags] = React.useState<string[]>(entry.tags)
   const [isLiked, setIsLiked] = React.useState(Boolean(entry.liked_by_user_id))
   const [isLikeAnimating, setIsLikeAnimating] = React.useState(false)
   const [pinnedCollection, setPinnedCollection] = React.useState<PinnedCollection>(
@@ -54,7 +52,6 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
   const isPartnerCard = chatLayout && entry.is_mine === false
   const canLike = entry.is_mine === false
   const canPin = space === "couple" && entry.is_mine === true
-  const isSaving = updateMood.isPending || deleteMood.isPending
 
   const handleLike = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
@@ -106,43 +103,42 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
     onPinned?.(entry.id, collection)
   }
 
-  const handleStartEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleEditButtonClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
-    setEditIntensity(entry.intensity)
+    if (isEditing) {
+      if (!editNote.trim()) {
+        toast("内容不能为空", { duration: 2000 })
+        return
+      }
+      updateMood.mutate(
+        {
+          moodId: entry.id,
+          mood: entry.mood as MoodType,
+          intensity: entry.intensity,
+          note: editNote,
+          tags: entry.tags,
+        },
+        {
+          onSuccess: () => {
+            toast("已更新", { description: "已焕然一新。", duration: 2000 })
+            setIsEditing(false)
+          },
+          onError: () => {
+            toast("保存失败", { description: "请稍后重试。", duration: 2200 })
+          },
+        }
+      )
+      return
+    }
     setEditNote(entry.note)
-    setEditTags(entry.tags)
     setIsEditing(true)
+    setIsExpanded(true)
   }
 
   const handleCancelEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
+    setEditNote(entry.note)
     setIsEditing(false)
-  }
-
-  const handleSaveEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
-    if (!editNote.trim()) {
-      toast("内容不能为空", { duration: 2000 })
-      return
-    }
-    updateMood.mutate(
-      {
-        moodId: entry.id,
-        mood: entry.mood as MoodType,
-        intensity: editIntensity,
-        note: editNote,
-        tags: editTags,
-      },
-      {
-        onSuccess: () => {
-          toast("已更新", { description: "这条记忆已焕然一新。", duration: 2000 })
-          setIsEditing(false)
-        },
-        onError: () => {
-          toast("保存失败", { description: "请稍后重试。", duration: 2200 })
-        },
-      }
-    )
   }
 
   const handleConfirmDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -159,36 +155,37 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
   }
 
   const card = (
-    <Card
+    <SurfaceCard
       onClick={() => {
         if (isEditing) {return}
         setIsExpanded(!isExpanded)
       }}
+      variant="glass"
       className={cn(
-        "border-none transition-all duration-500 cursor-pointer overflow-hidden",
-        isExpanded ? "bg-white shadow-md ring-1 ring-black/5" : "bg-white/60 hover:bg-white/80 shadow-sm",
+        "cursor-pointer overflow-hidden transition-all duration-500",
+        isExpanded && "bg-white shadow-md",
         chatLayout && isPartnerCard && "bg-rose-50/30 hover:bg-rose-50/50",
         pinnedCollection === "lesson" && ["border-l-4 border-l-amber-500", "bg-gradient-to-r from-amber-50/50 to-white/60", "shadow-md hover:shadow-lg"],
         pinnedCollection === "education" && ["border-l-4 border-l-indigo-500", "bg-gradient-to-r from-indigo-50/50 to-white/60", "shadow-md hover:shadow-lg"],
         pinnedCollection === "alert" && ["border-l-4 border-l-rose-500", "bg-gradient-to-r from-rose-50/50 to-white/60", "shadow-md hover:shadow-lg"]
       )}
     >
-      <div className={cn("p-5 flex gap-4 items-start", chatLayout && isPartnerCard && "flex-row-reverse")}>
+      <div className={cn("p-4 flex gap-3 items-start", chatLayout && isPartnerCard && "flex-row-reverse")}>
         <div
           className={cn(
-            "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-colors duration-300",
+            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300",
             config?.bg ?? "bg-stone-100",
             chatLayout && isPartnerCard && "opacity-80"
           )}
         >
-          {MoodIcon && <MoodIcon className={cn("w-5 h-5", config?.color)} strokeWidth={1.5} />}
+          {MoodIcon && <MoodIcon className={cn("w-4 h-4", config?.color)} strokeWidth={1.5} />}
         </div>
 
         <div className={cn("flex-1 min-w-0 pt-0.5", chatLayout && isPartnerCard && "items-end")}>
           {chatLayout && entry.is_mine !== undefined ? (
             <div className={cn("flex items-center gap-2 mb-1.5", isPartnerCard ? "flex-row-reverse" : "flex-row")}>
               <AuthorBadge isMine={entry.is_mine} />
-              <span className="font-mono text-sm font-semibold text-muted-foreground/60">{entry.time}</span>
+              <span className="font-mono text-xs font-semibold text-muted-foreground/60">{entry.time}</span>
               {canPin && (
                 <button
                   ref={pinButtonRef}
@@ -202,7 +199,7 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
                 >
                   <Pin
                     className={cn(
-                      "w-5 h-5 transition-colors",
+                      "w-4 h-4 transition-colors",
                       pinnedCollection === "lesson" && "text-amber-500 fill-amber-500/20",
                       pinnedCollection === "education" && "text-indigo-500 fill-indigo-500/20",
                       pinnedCollection === "alert" && "text-rose-500 fill-rose-500/20",
@@ -220,11 +217,11 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
             </div>
           ) : (
             <div className="flex justify-between items-center mb-1">
-              <h3 className={cn("text-base font-bold tracking-wide", config?.color)}>
+              <h3 className={cn("text-sm font-bold tracking-wide", config?.color)}>
                 {config?.label ?? entry.mood}
               </h3>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold font-mono text-muted-foreground/65">{entry.time}</span>
+                <span className="text-xs font-semibold font-mono text-muted-foreground/65">{entry.time}</span>
                 {canPin && (
                   <button
                     ref={pinButtonRef}
@@ -238,7 +235,7 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
                   >
                     <Pin
                       className={cn(
-                        "w-5 h-5 transition-colors",
+                        "w-4 h-4 transition-colors",
                         pinnedCollection === "lesson" && "text-amber-500 fill-amber-500/20",
                         pinnedCollection === "education" && "text-indigo-500 fill-indigo-500/20",
                         pinnedCollection === "alert" && "text-rose-500 fill-rose-500/20",
@@ -259,21 +256,43 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
           )}
 
           {chatLayout && (
-            <h3 className={cn("font-bold tracking-wide mb-1.5 text-lg text-right", isPartnerCard ? "text-right" : "text-left", config?.color)}>
+            <h3 className={cn("font-bold tracking-wide mb-1 text-base text-right", isPartnerCard ? "text-right" : "text-left", config?.color)}>
               {config?.label ?? entry.mood}
             </h3>
           )}
 
-          <p
-            className={cn(
-              "leading-relaxed transition-all duration-500 font-normal",
-              chatLayout ? "text-[15px] text-foreground/55" : "text-sm text-muted-foreground/70",
-              isExpanded ? "line-clamp-none" : "line-clamp-2",
-              chatLayout && isPartnerCard && "text-right"
-            )}
-          >
-            {entry.note}
-          </p>
+          {isEditing ? (
+            <textarea
+              value={editNote}
+              onChange={(event) => { setEditNote(event.target.value); }}
+              onClick={(event) => { event.stopPropagation(); }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.stopPropagation()
+                  setEditNote(entry.note)
+                  setIsEditing(false)
+                }
+              }}
+              rows={Math.min(6, Math.max(3, Math.ceil(editNote.length / 26)))}
+              autoFocus
+              className={cn(
+                  "w-full resize-none rounded-lg bg-white/50 px-3 py-2",
+                  "leading-relaxed font-normal text-sm text-foreground/70",
+                  "focus:outline-none transition-all duration-500",
+                chatLayout && isPartnerCard && "text-right"
+              )}
+            />
+          ) : (
+            <p
+              className={cn(
+                "leading-relaxed transition-all duration-500 font-normal text-sm text-foreground/60",
+                isExpanded ? "line-clamp-none" : "line-clamp-2",
+                chatLayout && isPartnerCard && "text-right"
+              )}
+            >
+              {entry.note}
+            </p>
+          )}
 
           {!isExpanded && (
             <div className={cn("mt-2.5 flex gap-2 items-center", chatLayout && isPartnerCard ? "justify-end" : "justify-start")}>
@@ -291,170 +310,86 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
           isExpanded ? (isEditing ? "max-h-96 opacity-100" : "max-h-64 opacity-100") : "max-h-0 opacity-0 overflow-hidden"
         )}
       >
-        <div className="p-5 pt-4 space-y-4">
-          <div
-            className={cn(
-              "transition-all duration-500",
-              isEditing ? "opacity-0 scale-[0.99] pointer-events-none h-0 overflow-hidden" : "opacity-100 scale-100"
-            )}
-          >
-            <div>
-              <div className={cn("flex justify-between text-muted-foreground mb-2 px-1", chatLayout ? "text-sm font-semibold" : "text-xs")}>
-                <span>Intensity</span>
-                <span>{entry.intensity * 10}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-stone-200/60 rounded-full overflow-hidden">
-                <div className="h-full bg-stone-400/60 rounded-full" style={{ width: `${entry.intensity * 10}%` }} />
-              </div>
+        <div className="p-4 pt-3 space-y-3">
+          <div>
+            <div className={cn("flex justify-between text-muted-foreground mb-1.5 px-1 text-xs")}>
+              <span>Intensity</span>
+              <span>{entry.intensity * 10}%</span>
             </div>
+            <div className="h-1 w-full bg-stone-200/60 rounded-full overflow-hidden">
+              <div className="h-full bg-stone-400/60 rounded-full" style={{ width: `${entry.intensity * 10}%` }} />
+            </div>
+          </div>
 
-            <div className="flex flex-wrap gap-2 pt-1">
+          {entry.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
               {entry.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full bg-stone-100/60 text-muted-foreground/70",
-                    chatLayout ? "text-sm font-medium" : "text-xs"
-                  )}
-                >
+                <span key={tag} className="px-2.5 py-1 rounded-full bg-stone-100/60 text-muted-foreground/70 text-xs">
                   #{tag}
                 </span>
               ))}
             </div>
+          )}
 
-            <div className="pt-2">
-              <div className="h-px w-full bg-stone-200/60" />
-              <div className={cn("mt-3 flex items-center justify-between tracking-wide", chatLayout ? "text-sm font-medium" : "text-xs")}>
-                {canLike && (
+          <div className="pt-1">
+            <div className="h-px w-full bg-stone-200/60" />
+            <div className="mt-2.5 flex items-center justify-between tracking-wide text-xs">
+              {canLike && (
+                <button
+                  type="button"
+                  className={cn(
+                    "flex items-center gap-1.5 min-h-[36px] min-w-[36px] px-2.5 rounded-full",
+                    "transition-all duration-300 active:scale-[0.95] cursor-pointer",
+                    isLiked ? "text-rose-400/80" : "text-muted-foreground/50 hover:text-rose-300/70"
+                  )}
+                  onClick={handleLike}
+                >
+                  <Heart
+                    className={cn("w-3.5 h-3.5 transition-all duration-300", isLikeAnimating && "scale-125", isLiked && "fill-rose-400/30")}
+                    strokeWidth={isLiked ? 1.5 : 1.8}
+                  />
+                </button>
+              )}
+              <div className="flex items-center gap-4">
+                {!isPartnerCard && isEditing && (
+                  <button
+                    type="button"
+                    className="text-muted-foreground/50 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
+                    onClick={handleCancelEdit}
+                  >
+                    Cancel
+                  </button>
+                )}
+                {!isPartnerCard && (
                   <button
                     type="button"
                     className={cn(
-                      "flex items-center gap-1.5 min-h-[44px] min-w-[44px] px-3 rounded-full",
-                      "transition-all duration-300 active:scale-[0.95] cursor-pointer",
-                      isLiked ? "text-rose-400/80" : "text-muted-foreground/50 hover:text-rose-300/70"
+                      "transition-opacity duration-300 active:scale-[0.98] cursor-pointer",
+                      isEditing ? "text-foreground/80 font-medium" : "text-muted-foreground/70 hover:text-foreground/70"
                     )}
-                    onClick={handleLike}
+                    onClick={handleEditButtonClick}
+                    disabled={updateMood.isPending}
                   >
-                    <Heart
-                      className={cn("w-4 h-4 transition-all duration-300", isLikeAnimating && "scale-125", isLiked && "fill-rose-400/30")}
-                      strokeWidth={isLiked ? 1.5 : 1.8}
-                    />
+                    {isEditing ? (updateMood.isPending ? "Saving..." : "Save") : "Edit entry"}
                   </button>
                 )}
-                <div className="flex items-center gap-4">
-                  {!isPartnerCard && (
-                    <button
-                      type="button"
-                      className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                      onClick={handleStartEdit}
-                    >
-                      Edit entry
-                    </button>
-                  )}
-                  {!isPartnerCard && (
-                    <button
-                      type="button"
-                      className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        setIsDeleteOpen(true)
-                      }}
-                    >
-                      Delete entry
-                    </button>
-                  )}
-                </div>
+                {!isPartnerCard && !isEditing && (
+                  <button
+                    type="button"
+                    className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setIsDeleteOpen(true)
+                    }}
+                  >
+                    Delete entry
+                  </button>
+                )}
               </div>
             </div>
           </div>
-
-          {isEditing && (
-            <div onClick={(event) => { event.stopPropagation(); }}>
-              <div className="rounded-3xl bg-[#fcfbf9] ring-1 ring-black/5 p-4 space-y-4 shadow-[0_10px_30px_-25px_rgba(0,0,0,0.25)]">
-                <div>
-                  <div className="flex justify-between text-xs text-muted-foreground mb-2 px-1">
-                    <span>Intensity</span>
-                    <span>{editIntensity * 10}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={10}
-                    value={editIntensity}
-                    onChange={(event) => { setEditIntensity(Number(event.target.value)); }}
-                    className="w-full h-1.5 rounded-full bg-stone-200/70 accent-stone-500/60"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs text-muted-foreground/70 px-1">Note</label>
-                  <textarea
-                    value={editNote}
-                    onChange={(event) => { setEditNote(event.target.value); }}
-                    rows={3}
-                    className="mt-2 w-full rounded-2xl bg-white/70 border border-transparent ring-1 ring-black/5 px-4 py-3 text-sm text-foreground/80 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-black/10 transition"
-                    placeholder="Add a gentle note..."
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <label className="text-xs text-muted-foreground/70 px-1">Tags</label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {editTags.map((tag, index) => (
-                      <button
-                        key={`${tag}-${index}`}
-                        type="button"
-                        className="text-[11px] px-3 py-1.5 rounded-full bg-stone-100/40 text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setEditTags((prev) => prev.filter((_, i) => i !== index))
-                        }}
-                      >
-                        #{tag}
-                      </button>
-                    ))}
-                    <input
-                      type="text"
-                      placeholder="Add tag"
-                      className="text-[11px] px-3 py-1.5 rounded-full bg-white/70 ring-1 ring-black/5 text-muted-foreground/70 focus:outline-none focus:ring-1 focus:ring-black/10"
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault()
-                          const value = event.currentTarget.value.trim()
-                          if (value) {
-                            setEditTags((prev) => [...prev, value])
-                            event.currentTarget.value = ""
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <div className="h-px w-full bg-stone-200/60" />
-                  <div className="mt-3 flex items-center justify-end gap-4 text-xs tracking-wide">
-                    <button
-                      type="button"
-                      className="text-muted-foreground/70 hover:text-foreground/70 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                      onClick={handleCancelEdit}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="text-foreground/70 hover:text-foreground/80 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                      onClick={handleSaveEdit}
-                      disabled={isSaving}
-                    >
-                      {isSaving ? "Saving..." : "Save"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
+
       </div>
 
       {isDeleteOpen &&
@@ -463,8 +398,9 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/10 backdrop-blur-sm"
             onClick={() => { setIsDeleteOpen(false); }}
           >
-            <div
-              className="w-[92%] max-w-sm rounded-[28px] bg-[#fdfbf7] shadow-[0_25px_60px_-30px_rgba(0,0,0,0.35)] ring-1 ring-black/5 p-6 animate-[fade-scale_0.25s_ease-out]"
+            <SurfaceCard
+              variant="solid"
+              className="w-[92%] max-w-sm p-6 animate-[fade-scale_0.25s_ease-out] shadow-[0_25px_60px_-30px_rgba(0,0,0,0.35)]"
               onClick={(event) => { event.preventDefault(); }}
             >
               <h3 className="text-base font-light text-foreground/85 tracking-wide">Remove this memory?</h3>
@@ -492,7 +428,7 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
                   {deleteMood.isPending ? "Removing..." : "Remove"}
                 </button>
               </div>
-            </div>
+            </SurfaceCard>
           </div>,
           document.body
         )}
@@ -505,37 +441,36 @@ export function TimelineCard({ entry, space, chatLayout, showAuthor, onPinned }:
           onClose={() => { setIsPinMenuOpen(false); }}
         />
       )}
-    </Card>
+    </SurfaceCard>
   )
 
-  if (!chatLayout) {return card}
+  // 全局统一卡片几何：宽 = 容器 - 5rem，chat/时间线布局尺寸一致
+  if (!chatLayout) {
+    return (
+      <div className="w-[calc(100%-5rem)] mx-auto py-1.5">{card}</div>
+    )
+  }
 
   return (
-    <div className="flex items-stretch">
-      <div className="w-6 shrink-0 flex flex-col items-center relative">
-        <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-stone-200/70" />
-        {!isPartnerCard && (
-          <div className="relative z-10 mt-[20px] w-2 h-2 rounded-full bg-stone-300/90 ring-2 ring-white shrink-0" />
+    <div className="relative py-1.5">
+      {/* 两侧轨道装饰线，绝对定位不挤占卡片宽度 */}
+      <div className="absolute left-3 top-0 bottom-0 w-px bg-stone-200/70" />
+      <div className="absolute right-3 top-0 bottom-0 w-px bg-rose-200/60" />
+      <div
+        className={cn(
+          "absolute top-[22px] w-2 h-2 rounded-full ring-2 ring-white z-10",
+          isPartnerCard ? "right-[10px] bg-rose-300/80" : "left-[10px] bg-stone-300/90"
         )}
-      </div>
+      />
 
-      <div className="flex-1 min-w-0 py-1.5">
-        <div className={cn("flex", isPartnerCard ? "justify-end" : "justify-start")}>
-          <div
-            className={cn(
-              "self-start mt-[22px] h-px w-3 shrink-0",
-              isPartnerCard ? "order-last bg-rose-200" : "order-first bg-stone-200"
-            )}
-          />
-          <div className="min-w-0 max-w-[calc(100%-12px)]">{card}</div>
-        </div>
-      </div>
-
-      <div className="w-6 shrink-0 flex flex-col items-center relative">
-        <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-rose-200/60" />
-        {isPartnerCard && (
-          <div className="relative z-10 mt-[20px] w-2 h-2 rounded-full bg-rose-300/80 ring-2 ring-white shrink-0" />
+      {/* 等宽卡片 + 轻微左右偏移（32px），避免满幅对甩 */}
+      <div
+        className={cn(
+          "relative w-[calc(100%-5rem)] min-w-0",
+          isPartnerCard ? "ml-auto mr-6" : "mr-auto ml-6"
         )}
+      >
+        {card}
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 "use client"
 
-import { cn } from "@/lib/utils"
 import { Clock, Heart } from "lucide-react"
+import { SurfaceCard } from "@/components/ui/surface-card"
 
 interface PendingInvitationStatusProps {
   spaceName?: string | null
@@ -15,13 +15,7 @@ export function PendingInvitationStatus({
   onCancel,
 }: PendingInvitationStatusProps) {
   return (
-    <div
-      className={cn(
-        "p-5 rounded-3xl",
-        "bg-stone-50 border border-stone-100",
-        "shadow-[0_4px_20px_-8px_rgba(0,0,0,0.08)]"
-      )}
-    >
+    <SurfaceCard variant="muted" className="p-5">
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
           <Clock className="w-5 h-5 text-stone-400" />
@@ -57,6 +51,6 @@ export function PendingInvitationStatus({
           </button>
         </div>
       )}
-    </div>
+    </SurfaceCard>
   )
 }

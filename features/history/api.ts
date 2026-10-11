@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api-client"
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "@/lib/api-client"
 import type { MoodType, ServerMoodRecord } from "@/features/moods"
 import type { PinnedCollection } from "./types"
 
@@ -46,8 +46,8 @@ export const updateMoodRecord = (
   patch: { mood_type: MoodType; intensity: number; note: string; tags: string[] }
 ) =>
   space === "couple"
-    ? apiPatch<{ record: ServerMoodRecord }>(`/couple-moods/${moodId}`, patch)
-    : apiPatch<{ record: ServerMoodRecord }>(`/moods/${moodId}`, patch)
+    ? apiPut<{ record: ServerMoodRecord }>(`/couple-moods/${moodId}`, patch)
+    : apiPut<{ record: ServerMoodRecord }>(`/moods/${moodId}`, patch)
 
 export const deleteMoodRecord = (moodId: string, space: HistorySpace) =>
   space === "couple" ? apiDelete(`/couple-moods/${moodId}`) : apiDelete(`/moods/${moodId}`)
