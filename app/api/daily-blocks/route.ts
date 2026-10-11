@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
 import { encrypt, decrypt } from "@/lib/encryption"
@@ -14,23 +14,10 @@ type DailyBlockPayload = {
   color_tag?: string
 }
 
-type DailyBlockSelect = {
-  id: true
-  user_id: true
-  title: true
-  note: true
-  task_date: true
-  start_minute: true
-  end_minute: true
-  color_tag: true
-  created_at: true
-  updated_at: true
-}
-
 const parseTaskDate = (value?: string | null) => {
-  if (!value) return null
+  if (!value) {return null}
   const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return null
+  if (Number.isNaN(parsed.getTime())) {return null}
   return value.slice(0, 10)
 }
 
@@ -44,7 +31,7 @@ async function validateCoupleAccess(
   requestUserId: string,
   targetUserId: string
 ): Promise<boolean> {
-  if (requestUserId === targetUserId) return true
+  if (requestUserId === targetUserId) {return true}
 
   const coupleSpace = await prisma.couple_spaces.findFirst({
     where: {
@@ -66,7 +53,7 @@ export async function GET(request: NextRequest) {
   const userId = resolveUserId(query.get("user_id"), sessionUserId)
   const dateParam = parseTaskDate(query.get("date"))
 
-  if (!dateParam) return fail(400, "date is required")
+  if (!dateParam) {return fail(400, "date is required")}
 
   if (userId === "guest") {
     return ok({ items: [] })
@@ -112,13 +99,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await parseJson<DailyBlockPayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const title = body.title?.trim()
-  if (!title) return fail(400, "title is required")
+  if (!title) {return fail(400, "title is required")}
 
   const dateParam = parseTaskDate(body.task_date)
-  if (!dateParam) return fail(400, "task_date is required")
+  if (!dateParam) {return fail(400, "task_date is required")}
 
   if (typeof body.start_minute !== "number" || typeof body.end_minute !== "number") {
     return fail(400, "start_minute and end_minute are required")

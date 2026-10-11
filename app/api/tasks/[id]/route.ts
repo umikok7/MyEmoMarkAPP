@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { decrypt } from "@/lib/encryption"
 import { fail, getSessionUserId, ok, parseJson, resolveUserId } from "@/lib/server/helpers"
@@ -14,7 +14,7 @@ export async function PATCH(
 ) {
   const resolvedParams = await Promise.resolve(params)
   const taskId = resolvedParams.id
-  if (!taskId) return fail(400, "Task ID is required")
+  if (!taskId) {return fail(400, "Task ID is required")}
 
   const body = await parseJson<TaskUpdatePayload>(request)
   if (!body || (typeof body.is_done !== "boolean" && typeof body.is_pinned !== "boolean")) {
@@ -56,7 +56,7 @@ export async function PATCH(
     },
   })
 
-  if (!record) return fail(404, "Task not found")
+  if (!record) {return fail(404, "Task not found")}
 
   return ok({
     record: {
@@ -72,7 +72,7 @@ export async function DELETE(
 ) {
   const resolvedParams = await Promise.resolve(params)
   const taskId = resolvedParams.id
-  if (!taskId) return fail(400, "Task ID is required")
+  if (!taskId) {return fail(400, "Task ID is required")}
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
@@ -91,7 +91,7 @@ export async function DELETE(
     },
   })
 
-  if (!record) return fail(404, "Task not found")
+  if (!record) {return fail(404, "Task not found")}
 
   return ok({ success: true })
 }

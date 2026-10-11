@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { fail, getSessionUserId, ok, parseJson } from "@/lib/server/helpers"
 
@@ -35,7 +35,7 @@ export async function PATCH(
   }
 
   const body = await parseJson<PinBody>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const { collection } = body
 

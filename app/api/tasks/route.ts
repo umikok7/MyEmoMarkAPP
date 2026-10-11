@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
 import { encrypt, decrypt } from "@/lib/encryption"
@@ -28,9 +28,9 @@ type TaskSelect = {
 }
 
 const parseTaskDate = (value?: string | null) => {
-  if (!value) return null
+  if (!value) {return null}
   const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return null
+  if (Number.isNaN(parsed.getTime())) {return null}
   return value.slice(0, 10)
 }
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   const dateParam = parseTaskDate(query.get("date"))
   const includePinned = query.get("include_pinned") === "true"
   
-  if (!dateParam && !includePinned) return fail(400, "date is required")
+  if (!dateParam && !includePinned) {return fail(400, "date is required")}
 
   if (userId === "guest") {
     return ok({ items: [] })
@@ -104,13 +104,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await parseJson<TaskPayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const title = body.title?.trim()
-  if (!title) return fail(400, "title is required")
+  if (!title) {return fail(400, "title is required")}
 
   const dateParam = parseTaskDate(body.task_date)
-  if (!dateParam) return fail(400, "task_date is required")
+  if (!dateParam) {return fail(400, "task_date is required")}
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(body.user_id || null, sessionUserId)

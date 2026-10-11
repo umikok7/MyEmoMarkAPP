@@ -9,7 +9,7 @@ const buildPath = (path: string) => {
 }
 
 const buildQueryString = (params?: Record<string, string | number | boolean | null | undefined>) => {
-  if (!params) return ""
+  if (!params) {return ""}
   const serialized = Object.entries(params)
     .filter(([, value]) => value !== undefined && value !== null)
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)

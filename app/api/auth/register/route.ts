@@ -1,6 +1,5 @@
 import bcrypt from "bcryptjs"
 import { v4 as uuidv4 } from "uuid"
-import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import {
   buildSessionCookieOptions,
@@ -18,13 +17,13 @@ type RegisterPayload = {
 
 export async function POST(request: Request) {
   const body = await parseJson<RegisterPayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const email = body.email?.trim()
   const username = body.username?.trim()
   const password = body.password
 
-  if (!email || !password) return fail(400, "Email and password required")
+  if (!email || !password) {return fail(400, "Email and password required")}
 
   const exists = await prisma.users.findUnique({
     where: { email },
@@ -68,7 +67,7 @@ export async function POST(request: Request) {
     },
     session_id: sessionId,
     expires_at: expiresAt,
-  }) as NextResponse
+  })
 
   response.cookies.set("session_id", sessionId, buildSessionCookieOptions())
   return response

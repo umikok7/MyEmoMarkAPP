@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import {
   fail,
@@ -19,10 +19,10 @@ export async function PATCH(
 ) {
   const resolvedParams = await Promise.resolve(params)
   const spaceId = resolvedParams.id
-  if (!spaceId) return fail(400, "Space ID is required")
+  if (!spaceId) {return fail(400, "Space ID is required")}
 
   const body = await parseJson<UpdateSpacePayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)
@@ -121,7 +121,7 @@ export async function DELETE(
 ) {
   const resolvedParams = await Promise.resolve(params)
   const spaceId = resolvedParams.id
-  if (!spaceId) return fail(400, "Space ID is required")
+  if (!spaceId) {return fail(400, "Space ID is required")}
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(null, sessionUserId)

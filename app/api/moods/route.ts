@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import type { NextRequest } from "next/server"
 import { v4 as uuidv4 } from "uuid"
 import { prisma } from "@/lib/prisma"
 import type { InputJsonValue } from "@/lib/generated/prisma/internal/prismaNamespace"
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         OR: [{ user_id_1: userId }, { user_id_2: userId }],
       },
     })
-    if (!space) return fail(404, "Space not found or not accessible")
+    if (!space) {return fail(404, "Space not found or not accessible")}
 
     const partnerIds = [space.user_id_1, space.user_id_2]
 
@@ -97,11 +97,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await parseJson<MoodPayload>(request)
-  if (!body) return fail(400, "Invalid JSON payload")
+  if (!body) {return fail(400, "Invalid JSON payload")}
 
   const moodType = body.mood_type?.trim()
   const intensity = Number(body.intensity)
-  if (!moodType) return fail(400, "mood_type is required")
+  if (!moodType) {return fail(400, "mood_type is required")}
   if (!Number.isFinite(intensity) || intensity < 1 || intensity > 10) {
     return fail(400, "intensity must be between 1 and 10")
   }
