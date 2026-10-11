@@ -456,14 +456,14 @@ export default function HomePage() {
 
         <button
           onClick={() => { setIsAddTaskOpen(true); }}
-          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-6 z-[60] w-9 h-9 rounded-full bg-[#f6f6f6] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95"
+          className="fixed bottom-[calc(6.75rem+env(safe-area-inset-bottom))] right-6 z-[60] w-9 h-9 rounded-full bg-[#f6f6f6] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95"
           aria-label="Add task"
         >
           <span className="text-foreground/50 text-lg font-normal leading-none">+</span>
         </button>
 
         {selectedMood && !isSavingComplete && (
-          <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[60] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="fixed bottom-[calc(6.75rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[60] animate-in fade-in slide-in-from-bottom-4 duration-300">
             <Button
               onClick={handleSaveMood}
               className="rounded-full px-7 py-3.5 text-xs tracking-[0.3em] uppercase bg-foreground text-white shadow-[0_16px_35px_-22px_rgba(0,0,0,0.35)] transition-transform active:scale-95 hover:bg-foreground/90"
@@ -475,7 +475,7 @@ export default function HomePage() {
         )}
 
         {isSavingComplete && (
-          <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[60] animate-in fade-in scale-95 duration-500">
+          <div className="fixed bottom-[calc(6.75rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[60] animate-in fade-in scale-95 duration-500">
             <div className="rounded-full px-7 py-3.5 text-xs tracking-[0.3em] uppercase bg-muted-foreground/10 text-muted-foreground/60">
               Saved
             </div>

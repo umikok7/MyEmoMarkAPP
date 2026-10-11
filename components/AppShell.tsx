@@ -13,7 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className={`${hideNav ? "" : "pb-[calc(5rem+env(safe-area-inset-bottom))]"} safe-area-root`}
+      className={`${hideNav ? "" : "pb-[calc(6.75rem+env(safe-area-inset-bottom))]"} safe-area-root`}
     >
       {children}
       {!hideNav && <BottomNav />}
