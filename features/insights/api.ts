@@ -20,8 +20,11 @@ export type MoodAnalytics = {
 }
 
 export type MonthTask = {
+  id: string
+  title: string
   task_date: string | Date
   is_done: boolean
+  is_pinned: boolean
 }
 
 export const fetchMoodAnalytics = (year: number, month: number) =>
@@ -32,6 +35,7 @@ export const fetchMonthTasks = (year: number, month: number, userId?: string) =>
     year,
     month,
     user_id: userId || undefined,
+    source: "insights",
   })
 
 export const HEATMAP_LEVELS = [

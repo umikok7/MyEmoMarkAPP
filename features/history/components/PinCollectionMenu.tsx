@@ -4,6 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { Sparkles, BookOpen, AlertTriangle, PinOff, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { SurfaceCard } from "@/components/ui/surface-card"
 import type { PinnedCollection } from "../types"
 
 interface PinCollectionMenuProps {
@@ -99,10 +100,11 @@ export function PinCollectionMenu({
       role="dialog"
       aria-modal="true"
     >
-      <div
+      <SurfaceCard
+        variant="solid"
         onClick={(event) => { event.stopPropagation(); }}
-        className="absolute bg-white rounded-lg shadow-xl ring-1 ring-black/5 p-1.5 min-w-[160px] animate-[fade-scale_0.18s_ease-out]"
-        style={{ top: position.top, left: position.left}}
+        className="absolute p-1.5 min-w-[160px] animate-[fade-scale_0.18s_ease-out]"
+        style={{ top: position.top, left: position.left }}
       >
         {MENU_ITEMS.map((item) => {
           const Icon = item.icon
@@ -114,7 +116,7 @@ export function PinCollectionMenu({
               onClick={() => { onSelect(item.collection); }}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl",
-                "text-left text-sm font-medium text-foreground/80",
+                "text-left text-sm font-light text-foreground/80",
                 "transition-colors duration-150 cursor-pointer",
                 item.hoverBg
               )}
@@ -139,7 +141,7 @@ export function PinCollectionMenu({
             </button>
           </>
         )}
-      </div>
+      </SurfaceCard>
     </div>,
     document.body
   )

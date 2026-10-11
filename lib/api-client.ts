@@ -20,7 +20,7 @@ type ApiEnvelope<T> = {
 const request = async <T>(
   path: string,
   init?: {
-    method?: "GET" | "POST" | "PATCH" | "DELETE"
+    method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE"
     body?: unknown
     params?: Record<string, string | number | boolean | null | undefined>
   }
@@ -60,4 +60,10 @@ export const apiPost = <T>(path: string, body?: unknown, params?: Record<string,
 export const apiPatch = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "PATCH", body })
 
-export const apiDelete = <T>(path: string) => request<T>(path, { method: "DELETE" })
+export const apiPut = <T>(path: string, body?: unknown) =>
+  request<T>(path, { method: "PUT", body })
+
+export const apiDelete = <T>(
+  path: string,
+  params?: Record<string, string | number | boolean | null | undefined>
+) => request<T>(path, { method: "DELETE", params })

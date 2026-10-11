@@ -3,23 +3,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { createTask, deleteTask, fetchPinnedTasks, fetchTasksForDate, updateTask } from "./api"
-import type { TaskItem } from "./types"
+import type { TaskItem, TaskSource } from "./types"
 
 const buildDayKey = (date: Date) => date.toISOString().slice(0, 10)
 
-export const useDayTasks = (date: Date, userId: string | null) => {
+export const useDayTasks = (date: Date, userId: string | null, source: TaskSource = "home") => {
   const dayKey = buildDayKey(date)
 
   const dayQuery = useQuery({
-    queryKey: ["tasks", "day", userId, dayKey],
-    queryFn: () => fetchTasksForDate(date, userId ?? undefined),
+    queryKey: ["tasks", "day", source, userId, dayKey],
+    queryFn: () => fetchTasksForDate(date, userId ?? undefined, source),
     enabled: userId !== null,
   })
 
   const pinnedQuery = useQuery({
-    queryKey: ["tasks", "pinned", userId, dayKey],
+    queryKey: ["tasks", "pinned", "home", userId, dayKey],
     queryFn: () => fetchPinnedTasks(date),
-    enabled: Boolean(userId) && userId !== "guest",
+    enabled: source === "home" && Boolean(userId) && userId !== "guest",
   })
 
   const tasks: TaskItem[] = dayQuery.data ?? []
@@ -37,15 +37,17 @@ export const useDayTasks = (date: Date, userId: string | null) => {
   }
 }
 
-export const useTaskMutations = (date: Date, userId: string | null) => {
+export const useTaskMutations = (date: Date, userId: string | null, source: TaskSource = "home") => {
   const queryClient = useQueryClient()
   const dayKey = buildDayKey(date)
-  const dayQueryKey = ["tasks", "day", userId, dayKey] as const
-  const pinnedQueryKey = ["tasks", "pinned", userId, dayKey] as const
+  const dayQueryKey = ["tasks", "day", source, userId, dayKey] as const
+  const pinnedQueryKey = ["tasks", "pinned", "home", userId, dayKey] as const
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: dayQueryKey })
-    void queryClient.invalidateQueries({ queryKey: pinnedQueryKey })
+    if (source === "home") {
+      void queryClient.invalidateQueries({ queryKey: pinnedQueryKey })
+    }
   }
 
   const setDayTasks = (updater: (prev: TaskItem[]) => TaskItem[]) => {
@@ -53,13 +55,15 @@ export const useTaskMutations = (date: Date, userId: string | null) => {
   }
 
   const setPinnedTasks = (updater: (prev: TaskItem[]) => TaskItem[]) => {
-    queryClient.setQueryData<TaskItem[]>(pinnedQueryKey, (prev) => (prev ? updater(prev) : prev))
+    if (source === "home") {
+      queryClient.setQueryData<TaskItem[]>(pinnedQueryKey, (prev) => (prev ? updater(prev) : prev))
+    }
   }
 
   const addTask = useMutation({
     mutationFn: (title: string) => {
       if (!userId) {throw new Error("Not signed in")}
-      return createTask(title, date, userId)
+      return createTask(title, date, userId, source)
     },
     onSuccess: (data) => {
       if (data.record) {
@@ -75,7 +79,7 @@ export const useTaskMutations = (date: Date, userId: string | null) => {
   })
 
   const toggleTask = useMutation({
-    mutationFn: (task: TaskItem) => updateTask(task.id, { is_done: !task.done }),
+    mutationFn: (task: TaskItem) => updateTask(task.id, { is_done: !task.done }, source),
     onMutate: async (task) => {
       const nextDone = !task.done
       setDayTasks((prev) => prev.map((item) => (item.id === task.id ? { ...item, done: nextDone } : item)))
@@ -91,7 +95,7 @@ export const useTaskMutations = (date: Date, userId: string | null) => {
   const togglePin = useMutation({
     mutationFn: (task: TaskItem) => {
       const nextPinned = !task.is_pinned
-      return updateTask(task.id, { is_pinned: nextPinned }).then(() => nextPinned)
+      return updateTask(task.id, { is_pinned: nextPinned }, source).then(() => nextPinned)
     },
     onMutate: async (task) => {
       const nextPinned = !task.is_pinned
@@ -132,7 +136,7 @@ export const useTaskMutations = (date: Date, userId: string | null) => {
   })
 
   const removeTask = useMutation({
-    mutationFn: (task: TaskItem) => deleteTask(task.id),
+    mutationFn: (task: TaskItem) => deleteTask(task.id, source),
     onMutate: async (task) => {
       setDayTasks((prev) => prev.filter((item) => item.id !== task.id))
       setPinnedTasks((prev) => prev.filter((item) => item.id !== task.id))

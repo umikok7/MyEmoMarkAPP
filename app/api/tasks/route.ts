@@ -14,6 +14,7 @@ type TaskPayload = {
   user_id?: string
   title?: string
   task_date?: string
+  task_source?: "home" | "insights"
 }
 
 type TaskSelect = {
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
   const userId = resolveUserId(query.get("user_id"), sessionUserId)
   const dateParam = parseTaskDate(query.get("date"))
   const includePinned = query.get("include_pinned") === "true"
+  const taskSource = query.get("source") === "insights" ? "insights" : "home"
   
   if (!dateParam && !includePinned) {return fail(400, "date is required")}
 
@@ -56,6 +58,7 @@ export async function GET(request: NextRequest) {
       where: {
         is_deleted: false,
         user_id: userId,
+        task_source: taskSource,
         is_pinned: true,
         is_done: false,
       },
@@ -76,6 +79,7 @@ export async function GET(request: NextRequest) {
       where: {
         is_deleted: false,
         user_id: userId,
+        task_source: taskSource,
         task_date: new Date(dateParam),
       },
       orderBy: { created_at: "asc" },
@@ -111,6 +115,7 @@ export async function POST(request: NextRequest) {
 
   const dateParam = parseTaskDate(body.task_date)
   if (!dateParam) {return fail(400, "task_date is required")}
+  const taskSource = body.task_source === "insights" ? "insights" : "home"
 
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
   const userId = resolveUserId(body.user_id || null, sessionUserId)
@@ -121,6 +126,7 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       title: encrypt(title),
       task_date: new Date(dateParam),
+      task_source: taskSource,
     },
     select: {
       id: true,

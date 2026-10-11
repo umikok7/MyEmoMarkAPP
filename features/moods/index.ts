@@ -1,5 +1,5 @@
 export { MOODS, getMoodMeta, getMoodEmoji } from "./constants"
 export type { MoodType, MoodMeta } from "./constants"
-export { saveMood, likeMood, unlikeMood, updateMood, deleteMood, pinMoodToCollection, fetchMoodAnalytics } from "./api"
+export { saveMood, likeMood, unlikeMood, deleteMood, pinMoodToCollection, fetchMoodAnalytics } from "./api"
 export type { SaveMoodInput, ServerMoodRecord } from "./api"
 export { useSaveMood } from "./hooks"

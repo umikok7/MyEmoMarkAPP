@@ -5,6 +5,8 @@ export type TaskItem = {
   is_pinned?: boolean
 }
 
+export type TaskSource = "home" | "insights"
+
 export type ServerTaskItem = {
   id: string
   title: string

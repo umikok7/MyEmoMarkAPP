@@ -6,7 +6,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Sparkles } from "lucide-re
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { AnniversaryModal } from "@/features/insights"
+import { AnniversaryModal, DayCheckinModal } from "@/features/insights"
 import { MoodDonutChart } from "@/features/insights"
 import { useMonthInsights, HEATMAP_LEVELS, getHeatmapLevel } from "@/features/insights"
 import type { AnniversaryItem } from "@/features/insights"
@@ -18,8 +18,19 @@ const WEEK_DAYS = ["S", "M", "T", "W", "T", "F", "S"]
 export default function InsightsPage() {
   const [selectedDate, setSelectedDate] = React.useState<Date>(() => new Date())
   const [selectedAnniversary, setSelectedAnniversary] = React.useState<AnniversaryItem | null>(null)
+  const [selectedCheckinDate, setSelectedCheckinDate] = React.useState<Date | null>(null)
 
-  const { donutData, suggestion, monthLabel, calendar, isLoading } = useMonthInsights(selectedDate)
+  const { donutData, suggestion, monthLabel, calendar, checkins, isLoading } = useMonthInsights(selectedDate)
+
+  const checkinsByDate = React.useMemo(
+    () => checkins.reduce<Record<string, typeof checkins>>((itemsByDate, task) => {
+      const dateKey = String(task.task_date).slice(0, 10)
+      itemsByDate[dateKey] = itemsByDate[dateKey] ?? []
+      itemsByDate[dateKey].push(task)
+      return itemsByDate
+    }, {}),
+    [checkins]
+  )
 
   const anniversaryMap = React.useMemo(
     () =>
@@ -61,7 +72,7 @@ export default function InsightsPage() {
         </header>
 
         <div className="space-y-5">
-          <Card className="border-none shadow-sm bg-white/60 backdrop-blur-sm p-5 rounded-3xl">
+          <section className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xs font-medium text-muted-foreground tracking-wider uppercase">Your Month</h2>
 
@@ -115,43 +126,78 @@ export default function InsightsPage() {
                     const heatmapLevel = getHeatmapLevel(day.taskCompleted, day.taskCount)
                     const heatmapColor = HEATMAP_LEVELS[heatmapLevel]
                     const anniversary = day.dateString ? anniversaryMap[day.dateString] : undefined
+                    const dayCheckins = day.dateString ? checkinsByDate[day.dateString] ?? [] : []
 
                     return (
-                      <div key={`${day.dateString ?? "pad"}-${index}`} className="aspect-square flex items-center justify-center relative">
+                      <div key={`${day.dateString ?? "pad"}-${index}`} className="relative flex min-h-[72px] items-stretch justify-center">
                         {day.date === null ? (
                           <span className="text-xs text-transparent">.</span>
                         ) : anniversary ? (
                           <button
                             type="button"
-                            onClick={() => { setSelectedAnniversary(anniversary); }}
-                            className="group w-full h-full rounded-lg relative overflow-hidden transition-all duration-300 ease-out hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
-                            aria-label={`Open anniversary on ${day.dateString}`}
+                            onClick={() => { setSelectedCheckinDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day.date ?? 1)); }}
+                            className="group relative min-h-[72px] w-full rounded-lg transition-all duration-300 ease-out hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+                            aria-label={`Record check-ins for ${day.dateString}`}
                           >
                             <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[#fff8f6] via-[#f9e6e2] to-[#f3d4d0]" />
                             <div className="absolute inset-0 rounded-lg border border-[#ebc5c7] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.9),transparent_58%)]" />
-                            <span className="relative z-10 flex h-full items-center justify-center text-xs font-semibold text-[#8f4d59]">
-                              {day.date}
+                            <span className="relative z-10 flex justify-center pt-1 text-xs font-semibold text-[#8f4d59]">{day.date}</span>
+                            <span className="relative z-10 mt-1 flex w-full flex-col items-center gap-0.5 px-0.5 pb-1 text-center">
+                              {dayCheckins.map((task) => (
+                                <span
+                                  key={task.id}
+                                  title={task.title}
+                                  className={cn(
+                                    "w-full truncate rounded-[2px] px-0.5 text-center text-[8px] leading-[12px]",
+                                    task.is_done
+                                      ? "bg-emerald-100/90 text-emerald-900 line-through"
+                                      : "bg-white/70 text-stone-700"
+                                  )}
+                                >
+                                  {task.title}
+                                </span>
+                              ))}
                             </span>
                             <Heart className="absolute right-1 top-1 h-2.5 w-2.5 fill-current text-[#c98793] transition-transform duration-300 group-hover:scale-110" />
-                            <Sparkles className="absolute bottom-1 right-1 h-2.5 w-2.5 text-[#d59ba3] transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+                            {dayCheckins.length === 0 && (
+                              <Sparkles className="absolute bottom-1 right-1 h-2.5 w-2.5 text-[#d59ba3] transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+                            )}
                           </button>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center rounded-lg relative">
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedCheckinDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day.date ?? 1)); }}
+                            className="relative flex min-h-[72px] w-full flex-col items-center rounded-lg cursor-pointer"
+                            aria-label={`Record check-ins for ${day.dateString ?? day.date}`}
+                          >
                             {day.taskCount > 0 && (
                               <div className={cn("absolute inset-0 rounded-lg transition-all duration-300 border", heatmapColor.bg, heatmapColor.border)} />
                             )}
                             <span
                               className={cn(
-                                "relative z-10 text-xs",
+                                "relative z-10 pt-1 text-xs",
                                 day.taskCount > 0 ? "text-foreground/80 font-medium" : "text-muted-foreground/30 font-light"
                               )}
                             >
                               {day.date}
                             </span>
-                            {day.taskCount > 0 && (
-                              <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-current opacity-60" />
-                            )}
-                          </div>
+                            <span className="relative z-10 mt-1 flex w-full flex-col items-center gap-0.5 px-0.5 pb-1 text-center">
+                              {dayCheckins.map((task) => (
+                                <span
+                                  key={task.id}
+                                  title={task.title}
+                                  className={cn(
+                                    "w-full truncate rounded-[2px] px-0.5 text-center text-[8px] leading-[12px]",
+                                    task.is_done
+                                      ? "bg-emerald-100/90 text-emerald-900 line-through"
+                                      : "bg-white/70 text-stone-700"
+                                  )}
+                                >
+                                  {task.title}
+                                </span>
+                              ))}
+                            </span>
+                          </button>
                         )}
                       </div>
                     )
@@ -170,7 +216,7 @@ export default function InsightsPage() {
                 </div>
               </div>
             </div>
-          </Card>
+          </section>
 
           <Card className="border-none shadow-sm bg-white/60 backdrop-blur-sm p-5 rounded-3xl">
             <h2 className="text-xs font-medium text-muted-foreground mb-3 tracking-wider uppercase">Mood Balance</h2>
@@ -192,6 +238,14 @@ export default function InsightsPage() {
       </div>
 
       <AnniversaryModal anniversary={selectedAnniversary} onClose={() => { setSelectedAnniversary(null); }} />
+      {selectedCheckinDate && (
+        <DayCheckinModal
+          date={selectedCheckinDate}
+          anniversary={anniversaryMap[`${selectedCheckinDate.getFullYear()}-${String(selectedCheckinDate.getMonth() + 1).padStart(2, "0")}-${String(selectedCheckinDate.getDate()).padStart(2, "0")}`]}
+          onClose={() => { setSelectedCheckinDate(null); }}
+          onOpenAnniversary={setSelectedAnniversary}
+        />
+      )}
     </div>
   )
 }

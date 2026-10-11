@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { decrypt } from "@/lib/encryption"
 import {
   fail,
   getSessionUserId,
@@ -14,8 +15,9 @@ export async function GET(request: NextRequest) {
 
   const year = Number(query.get("year"))
   const month = Number(query.get("month"))
+  const taskSource = query.get("source") === "insights" ? "insights" : "home"
 
-  if (!year || !month) {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
     return fail(400, "year and month are required")
   }
 
@@ -32,6 +34,7 @@ export async function GET(request: NextRequest) {
     where: {
       is_deleted: false,
       user_id: userId,
+      task_source: taskSource,
       task_date: {
         gte: startDate,
         lt: endDate,
@@ -44,9 +47,10 @@ export async function GET(request: NextRequest) {
       title: true,
       task_date: true,
       is_done: true,
+      is_pinned: true,
       created_at: true,
     },
   })
 
-  return ok({ tasks })
+  return ok({ tasks: tasks.map((task) => ({ ...task, title: decrypt(task.title) })) })
 }
