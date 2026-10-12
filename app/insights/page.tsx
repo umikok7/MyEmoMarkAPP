@@ -5,9 +5,7 @@ import Link from "next/link"
 import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { AnniversaryModal, DayCheckinModal } from "@/features/insights"
-import { MoodDonutChart } from "@/features/insights"
 import { useMonthInsights, HEATMAP_LEVELS, getHeatmapLevel } from "@/features/insights"
 import type { AnniversaryItem } from "@/features/insights"
 import anniversariesData from "@/data/anniversaries.json"
@@ -20,7 +18,8 @@ export default function InsightsPage() {
   const [selectedAnniversary, setSelectedAnniversary] = React.useState<AnniversaryItem | null>(null)
   const [selectedCheckinDate, setSelectedCheckinDate] = React.useState<Date | null>(null)
 
-  const { donutData, suggestion, monthLabel, calendar, checkins, isLoading } = useMonthInsights(selectedDate)
+  const { calendar, checkins, isLoading, partnerUserId, coupleSpaceId } = useMonthInsights(selectedDate)
+  const monthLabel = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(selectedDate)
 
   const checkinsByDate = React.useMemo(
     () => checkins.reduce<Record<string, typeof checkins>>((itemsByDate, task) => {
@@ -67,7 +66,7 @@ export default function InsightsPage() {
           </Link>
           <div>
             <h1 className="text-lg font-light text-foreground/70 tracking-wide">Reflection</h1>
-            {monthLabel && <p className="text-xs text-muted-foreground mt-0.5">{monthLabel}</p>}
+            <p className="text-xs text-muted-foreground mt-0.5">{monthLabel}</p>
           </div>
         </header>
 
@@ -92,7 +91,7 @@ export default function InsightsPage() {
                   disabled={isCurrentMonth || isLoading}
                   className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  {monthLabel || "Today"}
+                  {monthLabel}
                 </button>
 
                 <Button
@@ -149,9 +148,13 @@ export default function InsightsPage() {
                                   title={task.title}
                                   className={cn(
                                     "w-full truncate rounded-[2px] px-0.5 text-center text-[8px] leading-[12px]",
-                                    task.is_done
-                                      ? "bg-emerald-100/90 text-emerald-900 line-through"
-                                      : "bg-white/70 text-stone-700"
+                                    task.owner_user_id === partnerUserId
+                                      ? task.is_done
+                                        ? "bg-rose-200/90 text-rose-900 line-through"
+                                        : "bg-rose-100/90 text-rose-900"
+                                      : task.is_done
+                                        ? "bg-sky-200/90 text-sky-950 line-through"
+                                        : "bg-sky-100/90 text-sky-950"
                                   )}
                                 >
                                   {task.title}
@@ -188,9 +191,13 @@ export default function InsightsPage() {
                                   title={task.title}
                                   className={cn(
                                     "w-full truncate rounded-[2px] px-0.5 text-center text-[8px] leading-[12px]",
-                                    task.is_done
-                                      ? "bg-emerald-100/90 text-emerald-900 line-through"
-                                      : "bg-white/70 text-stone-700"
+                                    task.owner_user_id === partnerUserId
+                                      ? task.is_done
+                                        ? "bg-rose-200/90 text-rose-900 line-through"
+                                        : "bg-rose-100/90 text-rose-900"
+                                      : task.is_done
+                                        ? "bg-sky-200/90 text-sky-950 line-through"
+                                        : "bg-sky-100/90 text-sky-950"
                                   )}
                                 >
                                   {task.title}
@@ -210,7 +217,12 @@ export default function InsightsPage() {
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">Task Progress</span>
                 <div className="flex items-center gap-2">
-                  {HEATMAP_LEVELS.map((color, index) => (
+                  {partnerUserId ? (
+                    <>
+                      <span className="flex items-center gap-1 text-[9px] text-sky-900"><span className="h-2.5 w-2.5 rounded-sm bg-sky-200" />我</span>
+                      <span className="flex items-center gap-1 text-[9px] text-rose-900"><span className="h-2.5 w-2.5 rounded-sm bg-rose-200" />对方</span>
+                    </>
+                  ) : HEATMAP_LEVELS.map((color, index) => (
                     <div key={index} className={cn("w-3 h-3 rounded-sm border", color.bg, color.border)} />
                   ))}
                 </div>
@@ -218,22 +230,6 @@ export default function InsightsPage() {
             </div>
           </section>
 
-          <Card className="border-none shadow-sm bg-white/60 backdrop-blur-sm p-5 rounded-3xl">
-            <h2 className="text-xs font-medium text-muted-foreground mb-3 tracking-wider uppercase">Mood Balance</h2>
-            <MoodDonutChart data={donutData} isLoading={isLoading} />
-          </Card>
-
-          <div className="relative mt-4 pt-3">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3.5 bg-white/40 backdrop-blur-sm rounded-sm shadow-sm" />
-            <Card className="border-none shadow-sm bg-gradient-to-br from-[#fff9f5] to-[#fef5ed] p-6 rounded-2xl mt-1">
-              <div className="flex items-start gap-2">
-                <div className="w-1 h-1 rounded-full bg-primary/30 mt-2 flex-shrink-0" />
-                <p className="text-sm font-light text-foreground/80 leading-relaxed">
-                  {isLoading ? "..." : suggestion}
-                </p>
-              </div>
-            </Card>
-          </div>
         </div>
       </div>
 
@@ -241,6 +237,7 @@ export default function InsightsPage() {
       {selectedCheckinDate && (
         <DayCheckinModal
           date={selectedCheckinDate}
+          coupleSpaceId={coupleSpaceId}
           anniversary={anniversaryMap[`${selectedCheckinDate.getFullYear()}-${String(selectedCheckinDate.getMonth() + 1).padStart(2, "0")}-${String(selectedCheckinDate.getDate()).padStart(2, "0")}`]}
           onClose={() => { setSelectedCheckinDate(null); }}
           onOpenAnniversary={setSelectedAnniversary}

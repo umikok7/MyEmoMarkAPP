@@ -7,34 +7,20 @@ export type CalendarDay = {
   taskCompleted: number
 }
 
-export type DonutSlice = {
-  name: string
-  value: number
-  color: string
-}
-
-export type MoodAnalytics = {
-  donut_chart: DonutSlice[]
-  suggestion: string
-  month: string
-}
-
 export type MonthTask = {
   id: string
+  owner_user_id: string
   title: string
   task_date: string | Date
   is_done: boolean
   is_pinned: boolean
 }
 
-export const fetchMoodAnalytics = (year: number, month: number) =>
-  apiGet<MoodAnalytics>("/moods/analytics", { year, month })
-
-export const fetchMonthTasks = (year: number, month: number, userId?: string) =>
+export const fetchMonthTasks = (year: number, month: number, coupleSpaceId?: string) =>
   apiGet<{ tasks: MonthTask[] }>("/tasks/month", {
     year,
     month,
-    user_id: userId || undefined,
+    space_id: coupleSpaceId,
     source: "insights",
   })
 

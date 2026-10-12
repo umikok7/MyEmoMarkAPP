@@ -41,13 +41,6 @@ export const saveMood = ({ moodType, note, space, coupleSpaceId, userId }: SaveM
   })
 }
 
-export const fetchMoodAnalytics = (year: number, month: number) =>
-  apiGet<{
-    donut_chart: Array<{ name: string; value: number; color: string }>
-    suggestion: string
-    month: string
-  }>("/moods/analytics", { year, month })
-
 export const likeMood = (moodId: string, space: "personal" | "couple") =>
   space === "couple"
     ? apiPost(`/couple-moods/${moodId}/like`)

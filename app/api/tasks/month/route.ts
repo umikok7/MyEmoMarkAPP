@@ -11,7 +11,8 @@ import {
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams
   const sessionUserId = await getSessionUserId(request.cookies.get("session_id")?.value)
-  const userId = resolveUserId(query.get("user_id"), sessionUserId)
+  const userId = resolveUserId(null, sessionUserId)
+  const coupleSpaceId = query.get("space_id")
 
   const year = Number(query.get("year"))
   const month = Number(query.get("month"))
@@ -25,6 +26,25 @@ export async function GET(request: NextRequest) {
     return ok({ tasks: [] })
   }
 
+  let userIds = [userId]
+  if (coupleSpaceId) {
+    const coupleSpace = await prisma.couple_spaces.findFirst({
+      where: {
+        id: coupleSpaceId,
+        status: "accepted",
+        is_deleted: false,
+        OR: [{ user_id_1: userId }, { user_id_2: userId }],
+      },
+      select: { user_id_1: true, user_id_2: true },
+    })
+
+    if (!coupleSpace) {
+      return fail(403, "Accepted couple space required")
+    }
+
+    userIds = [coupleSpace.user_id_1, coupleSpace.user_id_2]
+  }
+
   const startDate = new Date(year, month - 1, 1)
   startDate.setHours(0, 0, 0, 0)
   const endDate = new Date(year, month, 1)
@@ -33,7 +53,7 @@ export async function GET(request: NextRequest) {
   const tasks = await prisma.daily_tasks.findMany({
     where: {
       is_deleted: false,
-      user_id: userId,
+      user_id: { in: userIds },
       task_source: taskSource,
       task_date: {
         gte: startDate,
@@ -52,5 +72,5 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  return ok({ tasks: tasks.map((task) => ({ ...task, title: decrypt(task.title) })) })
+  return ok({ tasks: tasks.map((task) => ({ ...task, owner_user_id: task.user_id, title: decrypt(task.title) })) })
 }
