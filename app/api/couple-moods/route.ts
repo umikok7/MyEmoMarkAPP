@@ -60,10 +60,7 @@ export async function GET(request: NextRequest) {
       is_deleted: false,
       space_id: spaceId,
     },
-    orderBy: [
-      { pinned_collection: { sort: "asc", nulls: "last" } },
-      { created_at: "desc" },
-    ],
+    orderBy: { created_at: "desc" },
     take: limit,
     skip: offset,
   })

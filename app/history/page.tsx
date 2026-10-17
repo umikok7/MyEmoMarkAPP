@@ -20,6 +20,31 @@ import {
   useMoodHistory,
 } from "@/features/history"
 
+const useInfiniteScroll = (
+  hasNextPage: boolean,
+  isFetchingNextPage: boolean,
+  fetchNextPage: () => void
+) => {
+  const sentinelRef = React.useRef<HTMLDivElement | null>(null)
+
+  React.useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel) {return}
+    const observer = new IntersectionObserver(
+      (observerEntries) => {
+        if (observerEntries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: "200px" }
+    )
+    observer.observe(sentinel)
+    return () => { observer.disconnect(); }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  return sentinelRef
+}
+
 type PinnedGroupKey = "lesson" | "education" | "alert"
 
 const PINNED_GROUPS: Array<{
@@ -43,22 +68,11 @@ export default function HistoryPage() {
     mapServerMoodToEntry(record, space, userId)
   )
 
-  const sentinelRef = React.useRef<HTMLDivElement | null>(null)
-
-  React.useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) {return}
-    const observer = new IntersectionObserver(
-      (observerEntries) => {
-        if (observerEntries[0]?.isIntersecting && historyQuery.hasNextPage && !historyQuery.isFetchingNextPage) {
-          void historyQuery.fetchNextPage()
-        }
-      },
-      { rootMargin: "200px" }
-    )
-    observer.observe(sentinel)
-    return () => { observer.disconnect(); }
-  }, [historyQuery])
+  const sentinelRef = useInfiniteScroll(
+    historyQuery.hasNextPage,
+    historyQuery.isFetchingNextPage,
+    () => { void historyQuery.fetchNextPage() }
+  )
 
   const filteredEntries = pinnedFilter
     ? entries.filter((entry) => entry.pinned_collection === pinnedFilter)
@@ -115,21 +129,36 @@ export default function HistoryPage() {
               </div>
             )}
 
-            {groupedEntries.map(([dateLabel, dayEntries]) => (
-              <section key={dateLabel} className="grid grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-3">
-                <h2 className="pt-2 text-right text-[11px] font-medium text-muted-foreground/70">{dateLabel}</h2>
-                <div>
-                  {dayEntries.map((entry) => (
-                    <TimelineCard
-                      key={entry.id}
-                      entry={entry}
-                      space={space}
-                      onPinned={handlePinned}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+            {groupedEntries.map(([dateLabel, dayEntries, year], index) => {
+              const prevYear = index > 0 ? groupedEntries[index - 1][2] : null
+              const showYearMark = prevYear !== null && prevYear !== year
+              return (
+                <React.Fragment key={`${dateLabel}-${year}`}>
+                  {showYearMark && (
+                    <div className="flex items-center gap-3 pt-2" aria-label={`已进入 ${year} 年`}>
+                      <div className="h-px flex-1 bg-stone-200/70" />
+                      <span className="text-[11px] font-medium tracking-[0.2em] text-muted-foreground/55">
+                        {year}
+                      </span>
+                      <div className="h-px flex-1 bg-stone-200/70" />
+                    </div>
+                  )}
+                  <section className="grid grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-3">
+                    <h2 className="pt-2 text-right text-[11px] font-medium text-muted-foreground/70">{dateLabel}</h2>
+                    <div>
+                      {dayEntries.map((entry) => (
+                        <TimelineCard
+                          key={entry.id}
+                          entry={entry}
+                          space={space}
+                          onPinned={handlePinned}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                </React.Fragment>
+              )
+            })}
 
             <div ref={sentinelRef} className="h-1" />
             {historyQuery.isFetchingNextPage && (

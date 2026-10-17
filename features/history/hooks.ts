@@ -50,22 +50,36 @@ export const mapServerMoodToEntry = (
   }
 }
 
-export const groupEntriesByDate = (entries: JournalEntry[]): Array<[string, JournalEntry[]]> => {
-  const groups = new Map<string, JournalEntry[]>()
+export const groupEntriesByDate = (
+  entries: JournalEntry[]
+): Array<[string, JournalEntry[], number]> => {
+  const groups = new Map<string, { label: string; year: number; entries: JournalEntry[] }>()
   entries.forEach((entry) => {
-    const dateLabel = new Date(entry.date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      weekday: "short",
-    })
-    const bucket = groups.get(dateLabel)
+    const date = new Date(entry.date)
+    // key 用完整年月日，避免不同年份的同名日期（如两年的 "Jan 3, Fri"）被合并
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+    const bucket = groups.get(key)
     if (bucket) {
-      bucket.push(entry)
+      bucket.entries.push(entry)
     } else {
-      groups.set(dateLabel, [entry])
+      groups.set(key, {
+        label: date
+          .toLocaleDateString("zh-CN", {
+            month: "short",
+            day: "numeric",
+            weekday: "short",
+          }).replace("日", "日·"),
+        year: date.getFullYear(),
+        entries: [entry],
+      })
     }
   })
-  return Array.from(groups.entries())
+
+  const result: Array<[string, JournalEntry[], number]> = []
+  for (const group of groups.values()) {
+    result.push([group.label, group.entries, group.year])
+  }
+  return result
 }
 
 export const useMoodHistory = (
