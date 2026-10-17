@@ -1,12 +1,26 @@
 "use client"
 
 import * as React from "react"
-import { createPortal } from "react-dom"
-import { Heart, Pin } from "lucide-react"
+import { BookOpen, Check, Heart, Pin, PinOff, Sparkles, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { SurfaceCard } from "@/components/ui/surface-card"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { useLongPress } from "@/lib/hooks/use-long-press"
 import { getMoodMeta, type MoodType } from "@/features/moods"
 import { useAuthStore } from "@/store/use-auth-store"
 import { useSpaceStore } from "@/features/couple"
@@ -14,7 +28,36 @@ import { useMoodRecordMutations } from "../hooks"
 import type { HistorySpace } from "../api"
 import type { JournalEntry, PinnedCollection } from "../types"
 import { AuthorBadge } from "./AuthorBadge"
-import { PinCollectionMenu } from "./PinCollectionMenu"
+
+const PIN_MENU_ITEMS: Array<{
+  collection: Exclude<PinnedCollection, null>
+  label: string
+  icon: React.ElementType
+  iconColor: string
+  focusBg: string
+}> = [
+  {
+    collection: "lesson",
+    label: "加入教训卡片合集",
+    icon: Sparkles,
+    iconColor: "text-amber-500",
+    focusBg: "focus:bg-amber-50/70",
+  },
+  {
+    collection: "education",
+    label: "加入教育卡片合集",
+    icon: BookOpen,
+    iconColor: "text-indigo-500",
+    focusBg: "focus:bg-indigo-50/70",
+  },
+  {
+    collection: "alert",
+    label: "加入警醒卡片合集",
+    icon: AlertTriangle,
+    iconColor: "text-rose-500",
+    focusBg: "focus:bg-rose-50/70",
+  },
+]
 
 interface TimelineCardProps {
   entry: JournalEntry
@@ -41,8 +84,6 @@ export function TimelineCard({ entry, space, onPinned }: TimelineCardProps) {
     entry.pinned_collection ?? null
   )
   const [isPinMenuOpen, setIsPinMenuOpen] = React.useState(false)
-  const [pinAnchorRect, setPinAnchorRect] = React.useState<DOMRect | null>(null)
-  const pinButtonRef = React.useRef<HTMLButtonElement | null>(null)
 
   const config = getMoodMeta(entry.mood as MoodType)
   const canEditEntry = entry.is_mine !== false
@@ -66,18 +107,6 @@ export function TimelineCard({ entry, space, onPinned }: TimelineCardProps) {
       }
     )
   }
-
-  const openPinMenu = () => {
-    if (!canPin || pinToCollection.isPending) {return}
-    const rect = pinButtonRef.current?.getBoundingClientRect()
-    if (!rect) {return}
-    setPinAnchorRect(rect)
-    setIsPinMenuOpen(true)
-  }
-
-  const { triggeredRef: _pinLongPressTriggered, ...longPressHandlers } = useLongPress(openPinMenu, {
-    delay: 500,
-  })
 
   const handlePinSelect = (collection: PinnedCollection) => {
     setIsPinMenuOpen(false)
@@ -136,8 +165,7 @@ export function TimelineCard({ entry, space, onPinned }: TimelineCardProps) {
     setIsExpanded(false)
   }
 
-  const handleConfirmDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault()
+  const handleConfirmDelete = () => {
     deleteMood.mutate(entry.id, {
       onSuccess: () => {
         toast("已删除", { description: "那段记忆被轻轻放下了。", duration: 2000 })
@@ -180,18 +208,57 @@ export function TimelineCard({ entry, space, onPinned }: TimelineCardProps) {
             <div className="flex shrink-0 items-center gap-1.5">
               <time className="font-mono text-xs text-muted-foreground/65">{entry.time}</time>
               {canPin && (
-                <button
-                  ref={pinButtonRef}
-                  type="button"
-                  onClick={(event) => { event.stopPropagation() }}
-                  {...longPressHandlers}
-                  className="rounded p-1 text-muted-foreground/50 hover:bg-stone-100 disabled:opacity-50"
-                  title="长按选择合集"
-                  disabled={pinToCollection.isPending}
-                  aria-label="长按选择置顶合集"
-                >
-                  <Pin className={cn("h-3.5 w-3.5", pinnedCollection && "fill-current")} />
-                </button>
+                <DropdownMenu open={isPinMenuOpen} onOpenChange={setIsPinMenuOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(event) => { event.stopPropagation() }}
+                      className="rounded p-1 text-muted-foreground/50 hover:bg-stone-100 disabled:opacity-50"
+                      title="选择合集"
+                      disabled={pinToCollection.isPending}
+                      aria-label="选择置顶合集"
+                    >
+                      <Pin className={cn("h-3.5 w-3.5", pinnedCollection && "fill-current")} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    side="bottom"
+                    align="center"
+                    sideOffset={8}
+                    className="min-w-[240px] rounded-none border-[#f0ebe6] bg-[#fdfbf7] p-1.5 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.15)]"
+                  >
+                    {PIN_MENU_ITEMS.map((item) => {
+                      const Icon = item.icon
+                      const isCurrent = pinnedCollection === item.collection
+                      return (
+                        <DropdownMenuItem
+                          key={item.collection}
+                          onSelect={() => { handlePinSelect(item.collection) }}
+                          className={cn(
+                            "gap-3 rounded-none px-3 py-2.5 text-sm font-light text-foreground/80",
+                            item.focusBg
+                          )}
+                        >
+                          <Icon className={cn("h-4 w-4 shrink-0", item.iconColor)} strokeWidth={1.8} />
+                          <span className="flex-1">{item.label}</span>
+                          {isCurrent && <Check className="h-4 w-4 shrink-0 text-foreground/60" strokeWidth={2} />}
+                        </DropdownMenuItem>
+                      )
+                    })}
+                    {pinnedCollection !== null && (
+                      <>
+                        <DropdownMenuSeparator className="mx-2 bg-stone-200" />
+                        <DropdownMenuItem
+                          onSelect={() => { handlePinSelect(null) }}
+                          className="gap-3 rounded-none px-3 py-2.5 text-sm font-medium text-muted-foreground/70 focus:bg-stone-100/60"
+                        >
+                          <PinOff className="h-4 w-4 shrink-0 text-muted-foreground/60" strokeWidth={1.8} />
+                          <span className="flex-1">取消置顶</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           </div>
@@ -255,55 +322,30 @@ export function TimelineCard({ entry, space, onPinned }: TimelineCardProps) {
         </div>
       )}
 
-      {isDeleteOpen &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/10 backdrop-blur-sm"
-            onClick={() => { setIsDeleteOpen(false); }}
-          >
-            <SurfaceCard
-              variant="solid"
-              className="w-[92%] max-w-sm p-6 animate-[fade-scale_0.25s_ease-out] shadow-[0_25px_60px_-30px_rgba(0,0,0,0.35)]"
-              onClick={(event) => { event.preventDefault(); }}
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent className="w-[92%] max-w-sm gap-0 rounded-3xl border-0 bg-[#fdfbf7] p-6 shadow-[0_25px_60px_-30px_rgba(0,0,0,0.35)]">
+          <AlertDialogHeader className="space-y-3">
+            <AlertDialogTitle className="text-base font-light tracking-wide text-foreground/85">
+              Remove this memory?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs leading-relaxed text-muted-foreground/70">
+              You cannot undo this action. If this entry feels heavy, it is okay to let it go.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-5 flex-row items-center justify-end gap-4 border-t border-stone-200/60 pt-4">
+            <AlertDialogCancel className="h-auto cursor-pointer rounded-none border-0 bg-transparent p-0 text-xs text-stone-400/80 shadow-none transition-opacity duration-300 hover:bg-transparent hover:text-stone-600">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deleteMood.isPending}
+              className="h-auto cursor-pointer rounded-none bg-transparent p-0 text-xs text-[#a67c5b]/80 shadow-none transition-opacity duration-300 hover:bg-transparent hover:text-[#8f6647]"
             >
-              <h3 className="text-base font-light text-foreground/85 tracking-wide">Remove this memory?</h3>
-              <p className="text-xs text-muted-foreground/70 mt-3 leading-relaxed">
-                You cannot undo this action. If this entry feels heavy, it is okay to let it go.
-              </p>
-              <div className="mt-5 h-px w-full bg-stone-200/60" />
-              <div className="mt-4 flex items-center justify-end gap-4 text-xs">
-                <button
-                  type="button"
-                  className="text-stone-400/80 hover:text-stone-600 transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setIsDeleteOpen(false)
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="text-[#a67c5b]/80 hover:text-[#8f6647] transition-opacity duration-300 active:scale-[0.98] cursor-pointer"
-                  onClick={handleConfirmDelete}
-                  disabled={deleteMood.isPending}
-                >
-                  {deleteMood.isPending ? "Removing..." : "Remove"}
-                </button>
-              </div>
-            </SurfaceCard>
-          </div>,
-          document.body
-        )}
-
-      {isPinMenuOpen && pinAnchorRect && (
-        <PinCollectionMenu
-          anchorRect={pinAnchorRect}
-          currentCollection={pinnedCollection}
-          onSelect={handlePinSelect}
-          onClose={() => { setIsPinMenuOpen(false); }}
-        />
-      )}
+              {deleteMood.isPending ? "Removing..." : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 

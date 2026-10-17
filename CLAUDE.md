@@ -11,6 +11,7 @@ AwesomeMark is a gentle mood journal and daily task tracker for daily reflection
 - **Framework**: Next.js 16 (App Router), React 19
 - **Database**: PostgreSQL via Prisma ORM (client generated to `lib/generated/prisma`)
 - **Styling**: Tailwind CSS v4 with CSS variables design tokens
+- **UI Components**: shadcn/ui（优先选择，见下文 "UI Components" 小节）
 - **PWA**: next-pwa (disabled in development)
 - **Auth**: Cookie-based sessions (`session_id` cookie), bcrypt password hashing
 - **Icons**: lucide-react
@@ -66,6 +67,13 @@ The Prisma client is generated to `lib/generated/prisma/` (not `node_modules`). 
 ```typescript
 import { prisma } from "@/lib/prisma"
 ```
+
+### UI Components (shadcn/ui)
+新增 UI 组件时**优先使用 shadcn/ui**（`npx shadcn@latest add <component>`），不要重复手写弹层、菜单、抽屉等通用交互。已引入：`dialog`、`alert-dialog`、`dropdown-menu`、`sheet`、`button`、`card`、`input`、`textarea`、`slider`、`sonner`。
+
+- 配置在 `components.json`；底层依赖是统一包 `radix-ui`（非 `@radix-ui/react-*` 散包）
+- 项目使用自定义暖色主题，shadcn 生成组件后需覆写 className 贴合现有视觉（如 `bg-[#fdfbf7]`、暖色描边），而不是接受默认中性样式
+- 例外：纯自定义交互（滑动卡片、时间格、底部导航）无 shadcn 对应物，保持手写；`surface-card.tsx` 是项目自有视觉变体，保留
 
 ## Environment Variables
 

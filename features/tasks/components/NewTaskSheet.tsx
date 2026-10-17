@@ -2,6 +2,13 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 
 interface NewTaskSheetProps {
   onClose: () => void
@@ -29,18 +36,6 @@ export function NewTaskSheet({
   const [value, setValue] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement | null>(null)
 
-  React.useEffect(() => {
-    const timer = window.setTimeout(() => { inputRef.current?.focus() }, 100)
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => {
-      window.clearTimeout(timer)
-      window.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [onClose])
-
   const submit = () => {
     const taskTitle = value.trim()
     if (!taskTitle || isPending || isDisabled) return
@@ -49,26 +44,30 @@ export function NewTaskSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center" onClick={(event) => { event.stopPropagation() }}>
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative w-full max-w-md rounded-t-[2rem] bg-[#fffdfa] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] transition-transform duration-300 ease-out"
+    <Sheet open onOpenChange={(open) => { if (!open) { onClose() } }}>
+      <SheetContent
+        side="bottom"
+        showCloseButton={false}
+        className="mx-auto max-w-md gap-0 rounded-t-[2rem] border-0 bg-[#fffdfa] px-6 pt-6 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="space-y-4 px-6 pb-8 pt-6">
+        <SheetHeader className="p-0">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm tracking-[0.3em] uppercase text-muted-foreground/70">{title}</h3>
+            <SheetTitle className="text-sm tracking-[0.3em] uppercase font-normal text-muted-foreground/70">{title}</SheetTitle>
             <button type="button" onClick={onClose} className="text-muted-foreground/60 transition hover:text-foreground/80" aria-label="Close">
               <span className="text-2xl font-normal leading-none">×</span>
             </button>
           </div>
-          {description && <p className="-mt-2 text-xs text-muted-foreground/70">{description}</p>}
+          {description && (
+            <SheetDescription className="-mt-2 text-xs text-muted-foreground/70">{description}</SheetDescription>
+          )}
+        </SheetHeader>
+        <div className="space-y-4 pb-8 pt-4">
           {children}
           <input
             ref={inputRef}
             type="text"
+            autoFocus
             value={value}
             onChange={(event) => { setValue(event.target.value) }}
             onKeyDown={(event) => {
@@ -94,7 +93,7 @@ export function NewTaskSheet({
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }

@@ -28,7 +28,7 @@ npm run dev:api
 - **Framework**: Next.js 16.1.4 with App Router
 - **Language**: TypeScript 5 (strict mode enabled)
 - **Styling**: Tailwind CSS 4 with class-variance-authority
-- **UI Components**: Radix UI primitives (Slot, Slider)
+- **UI Components**: shadcn/ui (preferred for new components, see UI/UX Guidelines)
 - **Icons**: Lucide React
 - **Notifications**: Sonner
 - **Database**: PostgreSQL (Neon)
@@ -134,8 +134,12 @@ try {
 
 This project has a custom UI/UX design system. When working on UI tasks:
 
-1. Use the `/ui-ux-pro-max` skill for design recommendations
-2. Follow the visual patterns in existing components:
+1. **Prefer shadcn/ui for new components** (`npx shadcn@latest add <component>`), configured in `components.json`. Already added: `dialog`, `alert-dialog`, `dropdown-menu`, `sheet`, `button`, `card`, `input`, `textarea`, `slider`, `sonner`. Do not hand-roll generic overlays (modals, menus, drawers) — the shadcn/radix versions already handle Escape, scroll lock, focus trap, and positioning.
+   - Underlying dependency is the unified `radix-ui` package (not individual `@radix-ui/react-*` packages)
+   - The project uses a custom warm theme: after generating a shadcn component, override classNames to match existing visuals (e.g. `bg-[#fdfbf7]`, warm borders) instead of accepting default neutral styles
+   - Exceptions: fully custom interactions (swipeable cards, time grids, bottom nav) have no shadcn equivalent and stay hand-written; `surface-card.tsx` is a project-owned visual variant
+2. Use the `/ui-ux-pro-max` skill for design recommendations
+3. Follow the visual patterns in existing components:
    - Minimal, clean aesthetic with subtle shadows
    - Rounded corners (rounded-2xl, rounded-3xl, rounded-full)
    - Backdrop blur for overlay elements

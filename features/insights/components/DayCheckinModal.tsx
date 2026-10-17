@@ -91,7 +91,7 @@ export function DayCheckinModal({ date, coupleSpaceId, anniversary, onClose, onO
 
   return createPortal(
     <NewTaskSheet
-      title="New Check-in"
+      title="打卡事项"
       description={formatDate(date)}
       placeholder="记录一项打卡内容"
       submitLabel="添加"

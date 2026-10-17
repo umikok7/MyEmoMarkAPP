@@ -2,6 +2,13 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { formatMinuteLabel } from "../utils"
 import type { TimeRange } from "../types"
@@ -32,24 +39,32 @@ export function BlockEditorSheet({
   onSubmit,
 }: BlockEditorSheetProps) {
   return (
-    <div className="fixed inset-x-0 top-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-50 flex items-end justify-center bg-black/20">
-      <div className="w-full max-w-md rounded-t-3xl bg-white px-6 py-5 shadow-[0_-10px_30px_rgba(0,0,0,0.15)]">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-stone-400 uppercase tracking-[0.3em]">
+    <Sheet open onOpenChange={(open) => { if (!open) { onClose() } }}>
+      <SheetContent
+        side="bottom"
+        showCloseButton={false}
+        className="mx-auto max-w-md gap-0 rounded-t-3xl border-0 bg-white px-6 py-5 shadow-[0_-10px_30px_rgba(0,0,0,0.15)]"
+      >
+        <SheetHeader className="p-0">
+          <SheetTitle>
+            <span className="block text-xs text-stone-400 uppercase tracking-[0.3em]">
               {editingBlockId ? "编辑计划" : "新计划"}
-            </p>
-            <h3 className="text-lg font-semibold text-stone-800 mt-1">
+            </span>
+            <span className="mt-1 block text-lg font-semibold text-stone-800">
               {formatMinuteLabel(range.start)} - {formatMinuteLabel(range.end)}
-            </h3>
-          </div>
+            </span>
+          </SheetTitle>
+          <SheetDescription className="sr-only">
+            {editingBlockId ? "编辑这个时间计划" : "创建一个新的时间计划"}
+          </SheetDescription>
           <button
+            type="button"
             onClick={onClose}
-            className="text-xs text-stone-400 hover:text-stone-600 transition"
+            className="absolute top-5 right-6 text-xs text-stone-400 hover:text-stone-600 transition"
           >
             关闭
           </button>
-        </div>
+        </SheetHeader>
 
         <div className="mt-4 space-y-3">
           <Input
@@ -95,7 +110,7 @@ export function BlockEditorSheet({
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }
